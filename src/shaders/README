@@ -1,0 +1,12 @@
+This directory contains the pixel and vertex shader source code.  These are
+compiled into bytecode by latte-assembler, which is a program you can find in
+the tools subdirectory of the source for the decaf emulator at
+https://github.com/decaf-emu/decaf-emu .
+
+The bytecode is then embedded into C code using a simple tool I wrote which you
+can find at https://github.com/snickerbockers/embed_c_code .  The code output
+by that program is placed into glff_shader.h so it can be included into gx2gl at
+compile-time.
+
+Normally there's no reason to need to recompile the shaders, so glff_shader.h is
+permanently checked into git and manually updated as needed.

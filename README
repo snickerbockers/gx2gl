@@ -1,0 +1,5 @@
+gx2gl
+
+This project aims to create a wrapper over the Wii U's GX2 graphics library
+which will allow users to create 3D homebrew applications using the old OpenGL
+1.x fixed-function pipeline.

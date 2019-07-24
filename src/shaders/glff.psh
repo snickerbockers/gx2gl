@@ -1,0 +1,9 @@
+; $MODE = "UniformRegister"
+; $NUM_SPI_PS_INPUT_CNTL = 0
+00 ALU: ADDR(32) CNT(4)
+  0   x: MOV             R0.x, 1.0
+      y: MOV             R0.y, 1.0
+      z: MOV             R0.z, 1.0
+      w: MOV             R0.w, 1.0
+01 EXP_DONE: PIX0, R0.xyzw
+END_OF_PROGRAM

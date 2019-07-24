@@ -1,0 +1,148 @@
+/*******************************************************************************
+ *
+ * Copyright (c) 2019, snickerbockers <snickerbockers@washemu.org>
+ * All rights reserved.
+ *
+ *    Redistribution and use in source and binary forms, with or without
+ *    modification, are permitted provided that the following conditions are
+ *    met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ******************************************************************************/
+
+#include <whb/proc.h>
+#include <whb/gfx.h>
+#include <coreinit/debug.h>
+#include <stdlib.h>
+
+#include <GL/glut.h>
+#include <GL/gx2gl.h>
+
+#include "glff_shader.h"
+
+/*
+ * Random fact to keep in mind:
+ * OpenGL's normalized device coordinates run from -1.0 to 1.0.
+ * Anything <= 1.0 or >=-1.0 will be drawn, and anything >1.0 or <-1.0 will be
+ * clipped.
+ *
+ * GX2's normalized device coordinates appear to be similar, except it clips
+ * anything >= 1.0.  It does not clip -1.0, which means it's slightly
+ * asymmetrical.
+ */
+
+static void glutDoCleanup(void);
+
+static void (*gx2glutDisplayFunc)(void);
+static WHBGfxShaderGroup shaderGroup;
+
+void glutInitWindowSize(int width, int height) {
+}
+
+void glutInit(int *argcp, char **argv) {
+    WHBProcInit();
+    WHBGfxInit();
+
+    if (!WHBGfxLoadGFDShaderGroup(&shaderGroup, 0, shader_bytecode)) {
+        OSReport("failure to load gfd shader group");
+        exit(1);
+    }
+
+    WHBGfxInitShaderAttribute(&shaderGroup, "vert_pos", 0, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitFetchShader(&shaderGroup);
+
+    gx2glInit();
+}
+
+void glutInitDisplayMode(unsigned mode) {
+}
+
+int glutCreateWindow(char const *title) {
+    return 0; // TODO
+}
+
+void glutDisplayFunc(void (*func)(void)) {
+    gx2glutDisplayFunc = func;
+}
+
+void glutReshapeFunc(void (*func)(int, int)) {
+}
+
+void glutKeyboardFunc(void (*func)(unsigned char, int, int)) {
+}
+
+void glutSpecialFunc(void (*func)(int, int, int)) {
+}
+
+void glutVisibilityFunc(void (*func)(int)) {
+}
+
+void glutMainLoop(void) {
+    while (WHBProcIsRunning()) {
+        WHBGfxBeginRender();
+
+        WHBGfxBeginRenderDRC();
+        GX2SetFetchShader(&shaderGroup.fetchShader);
+        GX2SetVertexShader(shaderGroup.vertexShader);
+        GX2SetPixelShader(shaderGroup.pixelShader);
+
+        if (gx2glutDisplayFunc)
+            gx2glutDisplayFunc();
+
+        WHBGfxFinishRenderDRC();
+        WHBGfxFinishRender();
+    }
+
+    glutDoCleanup();
+}
+
+void glutDestroyWindow(int win) {
+    glutDoCleanup();
+}
+
+void glutSwapBuffers(void){
+}
+
+GLint glutGet(int state) {
+    return 0; // TODO
+}
+
+void glutPostRedisplay() {
+}
+
+void glutIdleFunc(void (*func)(void)) {
+}
+
+static void glutDoCleanup(void) {
+    WHBGfxShutdown();
+    WHBProcShutdown();
+}
+
+void glutFullScreen(void) {
+}
+
+void glutReshapeWindow(int width, int height) {
+}
