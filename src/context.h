@@ -32,24 +32,19 @@
  *
  ******************************************************************************/
 
-#ifndef __gx2gl_h_
-#define __gx2gl_h_
+#ifndef GX2GL_CONTEXT_H_
+#define GX2GL_CONTEXT_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct gx2gl_context {
+    unsigned maxVerts;
+    float *immedBuf;
+    unsigned nVerts;
+    GLenum polyMode;
+    GLboolean immedMode;
+    GX2RBuffer vertImmedPos;
+    int valid;
+};
 
-typedef int gx2glContext;
-
-gx2glContext gx2glCreateContext(void);
-void gx2glDestroyContext(gx2glContext handle);
-
-void gx2glMakeCurrent(gx2glContext ctx);
-
-void *gx2glGetProcAddress(char const *procName);
-
-#ifdef __cplusplus
-}
-#endif
+extern struct gx2gl_context *cur_ctx;
 
 #endif

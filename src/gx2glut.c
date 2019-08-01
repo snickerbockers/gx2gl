@@ -58,6 +58,8 @@ static void glutDoCleanup(void);
 static void (*gx2glutDisplayFunc)(void);
 static WHBGfxShaderGroup shaderGroup;
 
+static gx2glContext gx2glutCtxHandle = -1;
+
 void glutInitWindowSize(int width, int height) {
 }
 
@@ -74,7 +76,8 @@ void glutInit(int *argcp, char **argv) {
                               GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
     WHBGfxInitFetchShader(&shaderGroup);
 
-    gx2glInit();
+    gx2glutCtxHandle = gx2glCreateContext();
+    gx2glMakeCurrent(gx2glutCtxHandle);
 }
 
 void glutInitDisplayMode(unsigned mode) {
@@ -137,6 +140,8 @@ void glutIdleFunc(void (*func)(void)) {
 }
 
 static void glutDoCleanup(void) {
+    gx2glDestroyContext(gx2glutCtxHandle);
+
     WHBGfxShutdown();
     WHBProcShutdown();
 }

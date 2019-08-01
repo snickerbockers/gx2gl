@@ -34,33 +34,70 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <stdlib.h>
 #include <gx2/draw.h>
 #include <gx2r/draw.h>
 #include <gx2r/buffer.h>
 #include <whb/gfx.h>
 
 #include <GL/gl.h>
+#include <GL/gx2gl.h>
 
-#define MAX_VERTS 1024
+#include "context.h"
 
-static float immed_buf[MAX_VERTS * 4];
+#define MAX_CONTEXTS 4
 
-static unsigned n_verts;
-static GLenum poly_mode;
-static GLboolean immed_mode = GL_FALSE;
+static struct gx2gl_context gx2gl_ctx_arr[MAX_CONTEXTS];
+struct gx2gl_context *cur_ctx;
 
-static GX2RBuffer vertImmedPos;
+gx2glContext gx2glCreateContext(void) {
+    gx2glContext handle;
+    for (handle = 0; handle < MAX_CONTEXTS; handle++)
+        if (gx2gl_ctx_arr[handle].valid == 0)
+            break;
+    if (handle == MAX_CONTEXTS)
+        return -1;
 
-void gx2glInit(void) {
-    vertImmedPos.flags = (GX2RResourceFlags)(GX2R_RESOURCE_BIND_VERTEX_BUFFER |
-                                             GX2R_RESOURCE_USAGE_CPU_READ |
-                                             GX2R_RESOURCE_USAGE_CPU_WRITE |
-                                             GX2R_RESOURCE_USAGE_GPU_READ);
-    vertImmedPos.elemSize = 4 * sizeof(float);
-    vertImmedPos.elemCount = 4;
-    GX2RCreateBuffer(&vertImmedPos);
+    struct gx2gl_context *ctx = gx2gl_ctx_arr + handle;
+
+    ctx->maxVerts = 1024;
+    ctx->immedBuf = malloc(ctx->maxVerts * sizeof(float) * 4);
+
+    ctx->vertImmedPos.flags = (GX2RResourceFlags)(GX2R_RESOURCE_BIND_VERTEX_BUFFER |
+                                                  GX2R_RESOURCE_USAGE_CPU_READ |
+                                                  GX2R_RESOURCE_USAGE_CPU_WRITE |
+                                                  GX2R_RESOURCE_USAGE_GPU_READ);
+    ctx->vertImmedPos.elemSize = 4 * sizeof(float);
+    ctx->vertImmedPos.elemCount = 4;
+    GX2RCreateBuffer(&ctx->vertImmedPos);
 
     WHBGfxClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+    ctx->valid = 1;
+
+    return handle;
+}
+
+void gx2glDestroyContext(gx2glContext handle) {
+    if (handle < 0)
+        return;
+    struct gx2gl_context *ctx = gx2gl_ctx_arr + handle;
+    if (!ctx->valid)
+        return;
+    if (cur_ctx == ctx)
+        cur_ctx = NULL;
+
+    ctx->valid = 0;
+
+    GX2RDestroyBufferEx(&ctx->vertImmedPos, 0);
+    free(ctx->immedBuf);
+
+    memset(ctx, 0, sizeof(*ctx));
+}
+
+void gx2glMakeCurrent(gx2glContext ctx) {
+    if (ctx < MAX_CONTEXTS && gx2gl_ctx_arr[ctx].valid)
+        cur_ctx = gx2gl_ctx_arr + ctx;
 }
 
 GLAPI void APIENTRY glShadeModel(GLenum mode) {
@@ -73,21 +110,22 @@ GLAPI void APIENTRY glClear(GLbitfield mask) {
 }
 
 GLAPI void APIENTRY glBegin(GLenum mode) {
-    n_verts = 0;
-    poly_mode = mode;
-    immed_mode = GL_TRUE;
+    cur_ctx->nVerts = 0;
+    cur_ctx->polyMode = mode;
+    cur_ctx->immedMode = GL_TRUE;
 }
 
 GLAPI void APIENTRY glEnd(void) {
-    immed_mode = GL_FALSE;
+    cur_ctx->immedMode = GL_FALSE;
 
-    if (n_verts) {
-        void *copydst = GX2RLockBufferEx(&vertImmedPos, (GX2RResourceFlags)0);
-        memcpy(copydst, immed_buf, n_verts * 4 * sizeof(float));
-        GX2RUnlockBufferEx(&vertImmedPos, (GX2RResourceFlags)0);
+    if (cur_ctx->nVerts) {
+        void *copydst = GX2RLockBufferEx(&cur_ctx->vertImmedPos, (GX2RResourceFlags)0);
+        memcpy(copydst, cur_ctx->immedBuf, cur_ctx->nVerts * 4 * sizeof(float));
+        GX2RUnlockBufferEx(&cur_ctx->vertImmedPos, (GX2RResourceFlags)0);
 
-        GX2RSetAttributeBuffer(&vertImmedPos, 0, vertImmedPos.elemSize, 0);
-        GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLES, n_verts, 0, 1);
+        GX2RSetAttributeBuffer(&cur_ctx->vertImmedPos, 0,
+                               cur_ctx->vertImmedPos.elemSize, 0);
+        GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLES, cur_ctx->nVerts, 0, 1);
     }
 }
 
@@ -95,8 +133,8 @@ GLAPI void APIENTRY glNormal3f(GLfloat x, GLfloat y, GLfloat z) {
 }
 
 GLAPI void APIENTRY glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
-    if (immed_mode == GL_TRUE && poly_mode == GL_TRIANGLES) {
-        float *vout = immed_buf + 4 * n_verts++;
+    if (cur_ctx->immedMode == GL_TRUE && cur_ctx->polyMode == GL_TRIANGLES) {
+        float *vout = cur_ctx->immedBuf + 4 * cur_ctx->nVerts++;
         vout[0] = x;
         vout[1] = y;
         vout[2] = z;
