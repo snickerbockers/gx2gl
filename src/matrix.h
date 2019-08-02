@@ -32,45 +32,27 @@
  *
  ******************************************************************************/
 
-#include <string.h>
+#ifndef GX2GL_MATRIX_H_
+#define GX2GL_MATRIX_H_
 
-#include <GL/gl.h>
-#include <GL/gx2gl.h>
+#define GX2GL_MAT_STACK_DEPTH 32
 
-#define GX2GL_PROC(procName) { #procName, procName }
+enum gx2gl_matrix_idx {
+    GX2GL_MATRIX_MODELVIEW,
+    GX2GL_MATRIX_PROJECTION,
+    GX2GL_MATRIX_TEXTURE,
 
-static struct gx2glProcTableEntry {
-    char const *name;
-    void *proc;
-} const gx2glProcTable[] = {
-    GX2GL_PROC(glShadeModel),
-    GX2GL_PROC(glViewport),
-    GX2GL_PROC(glClear),
-    GX2GL_PROC(glBegin),
-    GX2GL_PROC(glEnd),
-    GX2GL_PROC(glVertex3f),
-    GX2GL_PROC(glMatrixMode),
-    GX2GL_PROC(glTranslatef),
-    GX2GL_PROC(glLoadIdentity),
-    GX2GL_PROC(glEnable),
-    GX2GL_PROC(glClearDepth),
-    GX2GL_PROC(glClearColor),
-    GX2GL_PROC(glHint),
-    GX2GL_PROC(glDepthFunc),
-    GX2GL_PROC(glMatrixMode),
-    GX2GL_PROC(glLoadIdentity),
-
-    { NULL, NULL }
+    GX2GL_MATRIX_COUNT
 };
 
-void *gx2glGetProcAddress(char const *procName) {
-    struct gx2glProcTableEntry const *cursor = gx2glProcTable;
-    while (cursor->name) {
-        if (strcmp(procName, cursor->name) == 0)
-            return cursor->proc;
-        cursor++;
-    }
+struct gx2gl_matrix_context {
+    GLfloat stack[GX2GL_MATRIX_COUNT][GX2GL_MAT_STACK_DEPTH][16];
+    enum gx2gl_matrix_idx cur_mat;
+};
 
-    // procedure not found
-    return NULL;
-}
+float gx2glDot4fv(float const src1[4], float const src2[4]);
+void gx2glMatMult4fv(float dst[16], float const src1[16], float const src2[16]);
+
+void gx2gl_get_mvp(float mvp_out[16]);
+
+#endif

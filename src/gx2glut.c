@@ -56,9 +56,13 @@
 static void glutDoCleanup(void);
 
 static void (*gx2glutDisplayFunc)(void);
+static void (*gx2glutReshapeFunc)(int, int);
 static WHBGfxShaderGroup shaderGroup;
 
 static gx2glContext gx2glutCtxHandle = -1;
+
+#define DRC_WIDTH 854
+#define DRC_HEIGHT 480
 
 void glutInitWindowSize(int width, int height) {
 }
@@ -73,6 +77,14 @@ void glutInit(int *argcp, char **argv) {
     }
 
     WHBGfxInitShaderAttribute(&shaderGroup, "vert_pos", 0, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitShaderAttribute(&shaderGroup, "mvp_row0", 1, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitShaderAttribute(&shaderGroup, "mvp_row1", 2, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitShaderAttribute(&shaderGroup, "mvp_row2", 3, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitShaderAttribute(&shaderGroup, "mvp_row3", 4, 0,
                               GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
     WHBGfxInitFetchShader(&shaderGroup);
 
@@ -92,6 +104,7 @@ void glutDisplayFunc(void (*func)(void)) {
 }
 
 void glutReshapeFunc(void (*func)(int, int)) {
+    gx2glutReshapeFunc = func;
 }
 
 void glutKeyboardFunc(void (*func)(unsigned char, int, int)) {
@@ -104,6 +117,9 @@ void glutVisibilityFunc(void (*func)(int)) {
 }
 
 void glutMainLoop(void) {
+    if (gx2glutReshapeFunc)
+        gx2glutReshapeFunc(DRC_WIDTH, DRC_HEIGHT);
+
     while (WHBProcIsRunning()) {
         WHBGfxBeginRender();
 

@@ -35,14 +35,25 @@
 #ifndef GX2GL_CONTEXT_H_
 #define GX2GL_CONTEXT_H_
 
+#include <gx2r/buffer.h>
+
+#include "matrix.h"
+
 struct gx2gl_context {
+    struct gx2gl_matrix_context matrixContext;
+
     unsigned maxVerts;
     float *immedBuf;
     unsigned nVerts;
     GLenum polyMode;
     GLboolean immedMode;
     GX2RBuffer vertImmedPos;
+    /* GX2RBuffer vertImmedMvpRow0; */
+    /* GX2RBuffer vertImmedMvpRow1; */
+    /* GX2RBuffer vertImmedMvpRow2; */
+    /* GX2RBuffer vertImmedMvpRow3; */
     int valid;
+    GLenum error;
 };
 
 extern struct gx2gl_context *cur_ctx;

@@ -123,13 +123,28 @@ GLAPI void APIENTRY glEnd(void) {
         memcpy(copydst, cur_ctx->immedBuf, cur_ctx->nVerts * 4 * sizeof(float));
         GX2RUnlockBufferEx(&cur_ctx->vertImmedPos, (GX2RResourceFlags)0);
 
+        float mvp[16];
+        gx2gl_get_mvp(mvp);
+        float row0[4] = { mvp[0], mvp[4], mvp[8], mvp[12] };
+        float row1[4] = { mvp[1], mvp[5], mvp[9], mvp[13] };
+        float row2[4] = { mvp[2], mvp[6], mvp[10], mvp[14] };
+        float row3[4] = { mvp[4], mvp[7], mvp[11], mvp[15] };
+        uint32_t row0i[4], row1i[4], row2i[4], row3i[4];
+        memcpy(row0i, row0, sizeof(row0i));
+        memcpy(row1i, row1, sizeof(row1i));
+        memcpy(row2i, row2, sizeof(row2i));
+        memcpy(row3i, row3, sizeof(row3i));
+
+        GX2SetVertexUniformReg(0, 4, row0i);
+        GX2SetVertexUniformReg(4, 4, row1i);
+        GX2SetVertexUniformReg(8, 4, row2i);
+        GX2SetVertexUniformReg(12, 4, row3i);
+
         GX2RSetAttributeBuffer(&cur_ctx->vertImmedPos, 0,
                                cur_ctx->vertImmedPos.elemSize, 0);
+        // TODO: mvp
         GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLES, cur_ctx->nVerts, 0, 1);
     }
-}
-
-GLAPI void APIENTRY glNormal3f(GLfloat x, GLfloat y, GLfloat z) {
 }
 
 GLAPI void APIENTRY glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
@@ -142,13 +157,7 @@ GLAPI void APIENTRY glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
     }
 }
 
-GLAPI void APIENTRY glMatrixMode(GLenum mode) {
-}
-
 GLAPI void APIENTRY glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
-}
-
-GLAPI void APIENTRY glLoadIdentity(void) {
 }
 
 GLAPI void APIENTRY glClearDepth(double depth) {
