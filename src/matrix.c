@@ -33,6 +33,7 @@
  ******************************************************************************/
 
 #include <GL/gl.h>
+#include <string.h>
 
 #include "matrix.h"
 #include "context.h"
@@ -55,27 +56,24 @@ GLAPI void APIENTRY glMatrixMode(GLenum mode) {
 }
 
 GLAPI void APIENTRY glLoadIdentity(void) {
-    GLfloat *mat = gx2gl_get_cur_matrix();
+    static GLfloat const dat[] = {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    };
 
-    mat[0] = 1.0f;
-    mat[1] = 0.0f;
-    mat[2] = 0.0f;
-    mat[3] = 0.0f;
+    glLoadMatrixf(dat);
+}
 
-    mat[4] = 0.0f;
-    mat[5] = 1.0f;
-    mat[6] = 0.0f;
-    mat[7] = 0.0f;
+GLAPI void APIENTRY glLoadMatrixf(const GLfloat *m) {
+   GLfloat *mat = gx2gl_get_cur_matrix();
+   memcpy(mat, m, sizeof(GLfloat) * 16);
+}
 
-    mat[8] = 0.0f;
-    mat[9] = 0.0f;
-    mat[10] = 1.0f;
-    mat[11] = 0.0f;
-
-    mat[12] = 0.0f;
-    mat[13] = 0.0f;
-    mat[14] = 0.0f;
-    mat[15] = 1.0f;
+GLAPI void APIENTRY glMultMatrixf(const GLfloat *m) {
+    GLfloat *srcmat = gx2gl_get_cur_matrix();
+    gx2glMatMult4fv(srcmat, srcmat, m);
 }
 
 float gx2glDot4fv(float const src1[4], float const src2[4]) {
@@ -86,7 +84,7 @@ float gx2glDot4fv(float const src1[4], float const src2[4]) {
 // column-major matrix multiplication
 void gx2glMatMult4fv(float dst[16],
                      float const src1[16], float const src2[16]) {
-    assert(dst != src1 && dst != src2);
+    assert(dst != src2);
 
     float src1_rows[4][4] = {
         { src1[0], src1[4], src1[8],  src1[12] },

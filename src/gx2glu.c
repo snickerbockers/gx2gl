@@ -34,8 +34,34 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <math.h>
 
 void gluPerspective(GLdouble fovy, GLdouble aspect,
-                    GLdouble zNear, GLdouble zFar) {
-    // TODO: this
+                    GLdouble near, GLdouble far) {
+    GLdouble bottom = sin(fovy * (M_PI / 180.0) * 0.5) * near;
+    GLdouble right = bottom * aspect;
+
+    GLfloat mat[16];
+
+    mat[0] = near / right;
+    mat[1] = 0.0f;
+    mat[2] = 0.0f;
+    mat[3] = 0.0f;
+
+    mat[4] = 0.0f;
+    mat[5] = near / bottom;
+    mat[6] = 0.0f;
+    mat[7] = 0.0f;
+
+    mat[8] = 0.0f;
+    mat[9] = 0.0f;
+    mat[10] = -(far + near) / (far - near);
+    mat[11] = -1.0f;
+
+    mat[12] = 0.0f;
+    mat[13] = 0.0f;
+    mat[14] = -2.0 * far * near / (far - near);
+    mat[15] = 0.0f;
+
+    glMultMatrixf(mat);
 }

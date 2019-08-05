@@ -158,6 +158,13 @@ GLAPI void APIENTRY glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 }
 
 GLAPI void APIENTRY glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
+    GLfloat mat[16] = {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        x, y, z, 1.0f
+    };
+    glMultMatrixf(mat);
 }
 
 GLAPI void APIENTRY glClearDepth(double depth) {
