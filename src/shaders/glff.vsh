@@ -37,25 +37,25 @@
 00 CALL_FS
 
 01 ALU_PUSH_BEFORE :
-    0    x: DOT4 R127.x, R1.x, C0.x
+    0    x: DOT4 R2.x,   R1.x, C0.x
          y: DOT4 ____,   R1.y, C0.y
          z: DOT4 ____,   R1.z, C0.z
          w: DOT4 ____,   R1.w, C0.w
 
     1    x: DOT4 ____,   R1.x, C1.x
-         y: DOT4 R127.y, R1.y, C1.y
+         y: DOT4 R2.y,   R1.y, C1.y
          z: DOT4 ____,   R1.z, C1.z
          w: DOT4 ____,   R1.w, C1.w
 
     2    x: DOT4 ____,   R1.x, C2.x
          y: DOT4 ____,   R1.y, C2.y
-         z: DOT4 R127.z, R1.z, C2.z
+         z: DOT4 R2.z,   R1.z, C2.z
          w: DOT4 ____,   R1.w, C2.w
 
     3    x: DOT4 ____,   R1.x, C3.x
          y: DOT4 ____,   R1.y, C3.y
          z: DOT4 ____,   R1.z, C3.z
-         w: DOT4 R127.w, R1.w, C3.w
+         w: DOT4 R2.w,   R1.w, C3.w
 
-02 EXP_DONE: POS0, R127.xyzw
+02 EXP_DONE: POS0, R2.xyzw
 END_OF_PROGRAM
