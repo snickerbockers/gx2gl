@@ -70,6 +70,7 @@
 #define CMDBUF_POOL_ALIGN 64
 
 static void *cmdbuf_pool;
+
 static struct gx2gl_context gx2gl_ctx_arr[MAX_CONTEXTS];
 struct gx2gl_context *cur_ctx;
 static MEMHeapHandle heap_mem1, heap_fg, heap_mem2, heap_blk_handle;
@@ -235,6 +236,16 @@ my_free_fn(GX2RResourceFlags flags, void *block) {
     OSReport("ERROR: %s called.", __func__);
 }
 
+static GX2PrimitiveMode gx2glGetGx2PrimitiveMode(GLenum mode) {
+    switch (mode) {
+    case GL_QUADS:
+        return GX2_PRIMITIVE_MODE_QUADS;
+    case GL_TRIANGLES:
+    default:
+        return GX2_PRIMITIVE_MODE_TRIANGLES;
+    }
+}
+
 gx2glContext gx2glCreateContext(void) {
     gx2glContext handle;
     for (handle = 0; handle < MAX_CONTEXTS; handle++)
@@ -358,12 +369,13 @@ GLAPI void APIENTRY glEnd(void) {
         GX2SetVertexUniformReg(12, 4, row3i);
 
         GX2SetAttribBuffer(0, VERT_LEN * sizeof(float) * cur_ctx->nVerts, VERT_LEN * sizeof(float), cur_ctx->immedBuf);
-        GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLES, cur_ctx->nVerts, 0, 1);
+        GX2DrawEx(gx2glGetGx2PrimitiveMode(cur_ctx->polyMode), cur_ctx->nVerts, 0, 1);
     }
 }
 
 GLAPI void APIENTRY glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
-    if (cur_ctx->immedMode == GL_TRUE && cur_ctx->polyMode == GL_TRIANGLES) {
+    if (cur_ctx->immedMode == GL_TRUE &&
+        (cur_ctx->polyMode == GL_TRIANGLES || cur_ctx->polyMode == GL_QUADS)) {
         float *vout = cur_ctx->immedBuf + VERT_LEN * cur_ctx->nVerts++;
         vout[0] = x;
         vout[1] = y;
