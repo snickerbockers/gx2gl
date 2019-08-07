@@ -370,6 +370,7 @@ GLAPI void APIENTRY glEnd(void) {
 
         GX2SetAttribBuffer(0, VERT_LEN * sizeof(float) * cur_ctx->nVerts, VERT_LEN * sizeof(float), cur_ctx->immedBuf);
         GX2DrawEx(gx2glGetGx2PrimitiveMode(cur_ctx->polyMode), cur_ctx->nVerts, 0, 1);
+        GX2DrawDone();
     }
 }
 
