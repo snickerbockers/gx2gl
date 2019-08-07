@@ -40,8 +40,6 @@
 #include <GL/glut.h>
 #include <GL/gx2gl.h>
 
-#include "glff_shader.h"
-
 /*
  * Random fact to keep in mind:
  * OpenGL's normalized device coordinates run from -1.0 to 1.0.
@@ -57,7 +55,6 @@ static void glutDoCleanup(void);
 
 static void (*gx2glutDisplayFunc)(void);
 static void (*gx2glutReshapeFunc)(int, int);
-static WHBGfxShaderGroup shaderGroup;
 
 static gx2glContext gx2glutCtxHandle = -1;
 
@@ -70,23 +67,6 @@ void glutInitWindowSize(int width, int height) {
 void glutInit(int *argcp, char **argv) {
     WHBProcInit();
     WHBGfxInit();
-
-    if (!WHBGfxLoadGFDShaderGroup(&shaderGroup, 0, shader_bytecode)) {
-        OSReport("failure to load gfd shader group");
-        exit(1);
-    }
-
-    WHBGfxInitShaderAttribute(&shaderGroup, "vert_pos", 0, 0,
-                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
-    WHBGfxInitShaderAttribute(&shaderGroup, "mvp_row0", 1, 0,
-                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
-    WHBGfxInitShaderAttribute(&shaderGroup, "mvp_row1", 2, 0,
-                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
-    WHBGfxInitShaderAttribute(&shaderGroup, "mvp_row2", 3, 0,
-                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
-    WHBGfxInitShaderAttribute(&shaderGroup, "mvp_row3", 4, 0,
-                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
-    WHBGfxInitFetchShader(&shaderGroup);
 
     gx2glutCtxHandle = gx2glCreateContext();
     gx2glMakeCurrent(gx2glutCtxHandle);
@@ -121,18 +101,12 @@ void glutMainLoop(void) {
         gx2glutReshapeFunc(DRC_WIDTH, DRC_HEIGHT);
 
     while (WHBProcIsRunning()) {
-        WHBGfxBeginRender();
-
-        WHBGfxBeginRenderDRC();
-        GX2SetFetchShader(&shaderGroup.fetchShader);
-        GX2SetVertexShader(shaderGroup.vertexShader);
-        GX2SetPixelShader(shaderGroup.pixelShader);
+        gx2glBeginRender();
 
         if (gx2glutDisplayFunc)
             gx2glutDisplayFunc();
 
-        WHBGfxFinishRenderDRC();
-        WHBGfxFinishRender();
+        gx2glEndRender();
     }
 
     glutDoCleanup();

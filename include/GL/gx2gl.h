@@ -46,6 +46,9 @@ void gx2glDestroyContext(gx2glContext handle);
 
 void gx2glMakeCurrent(gx2glContext ctx);
 
+void gx2glBeginRender(void);
+void gx2glEndRender(void);
+
 void *gx2glGetProcAddress(char const *procName);
 
 #ifdef __cplusplus

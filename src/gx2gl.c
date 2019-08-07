@@ -39,11 +39,13 @@
 #include <gx2r/draw.h>
 #include <gx2r/buffer.h>
 #include <whb/gfx.h>
+#include <coreinit/debug.h>
 
 #include <GL/gl.h>
 #include <GL/gx2gl.h>
 
 #include "context.h"
+#include "glff_shader.h"
 
 #define MAX_CONTEXTS 4
 
@@ -59,6 +61,22 @@ gx2glContext gx2glCreateContext(void) {
         return -1;
 
     struct gx2gl_context *ctx = gx2gl_ctx_arr + handle;
+
+    if (!WHBGfxLoadGFDShaderGroup(&ctx->shaderGroup, 0, shader_bytecode)) {
+        OSReport("failure to load gfd shader group");
+        exit(1);
+    }
+    WHBGfxInitShaderAttribute(&ctx->shaderGroup, "vert_pos", 0, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitShaderAttribute(&ctx->shaderGroup, "mvp_row0", 1, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitShaderAttribute(&ctx->shaderGroup, "mvp_row1", 2, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitShaderAttribute(&ctx->shaderGroup, "mvp_row2", 3, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitShaderAttribute(&ctx->shaderGroup, "mvp_row3", 4, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitFetchShader(&ctx->shaderGroup);
 
     ctx->maxVerts = 1024;
     ctx->immedBuf = malloc(ctx->maxVerts * sizeof(float) * 4);
@@ -98,6 +116,20 @@ void gx2glDestroyContext(gx2glContext handle) {
 void gx2glMakeCurrent(gx2glContext ctx) {
     if (ctx < MAX_CONTEXTS && gx2gl_ctx_arr[ctx].valid)
         cur_ctx = gx2gl_ctx_arr + ctx;
+}
+
+void gx2glBeginRender(void) {
+    WHBGfxBeginRender();
+
+    WHBGfxBeginRenderDRC();
+    GX2SetFetchShader(&cur_ctx->shaderGroup.fetchShader);
+    GX2SetVertexShader(cur_ctx->shaderGroup.vertexShader);
+    GX2SetPixelShader(cur_ctx->shaderGroup.pixelShader);
+}
+
+void gx2glEndRender(void) {
+    WHBGfxFinishRenderDRC();
+    WHBGfxFinishRender();
 }
 
 GLAPI void APIENTRY glShadeModel(GLenum mode) {
