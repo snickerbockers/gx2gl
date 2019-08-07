@@ -40,6 +40,21 @@
 #include <gx2r/buffer.h>
 #include <whb/gfx.h>
 #include <coreinit/debug.h>
+#include <gx2/mem.h>
+#include <coreinit/memheap.h>
+#include <coreinit/memunitheap.h>
+#include <coreinit/memblockheap.h>
+#include <coreinit/memdefaultheap.h>
+#include <coreinit/memexpheap.h>
+#include <coreinit/memfrmheap.h>
+#include <gx2/state.h>
+#include <gx2r/mem.h>
+#include <gx2/context.h>
+#include <gx2/display.h>
+#include <gx2/registers.h>
+#include <gx2/swap.h>
+#include <gx2/clear.h>
+#include <gx2/event.h>
 
 #include <GL/gl.h>
 #include <GL/gx2gl.h>
@@ -49,8 +64,174 @@
 
 #define MAX_CONTEXTS 4
 
+#define CMDBUF_POOL_SIZE 4194304
+#define CMDBUF_POOL_ALIGN 64
+
+static void *cmdbuf_pool;
 static struct gx2gl_context gx2gl_ctx_arr[MAX_CONTEXTS];
 struct gx2gl_context *cur_ctx;
+static MEMHeapHandle heap_mem1, heap_fg, heap_mem2, heap_blk_handle;
+static MEMBlockHeap heap_blk;
+static MEMBlockHeapTracking tracking;
+
+static void *
+my_alloc_fn(GX2RResourceFlags flags, uint32_t size, uint32_t align);
+static void
+my_free_fn(GX2RResourceFlags flags, void *block);
+
+#define BLOCK_HEAP_SIZE 33554356
+
+struct game_screen {
+    void *buf;
+    GX2ContextState *ctx_state;
+    GX2ColorBuffer col_buf;
+    GX2DepthBuffer depth_buf;
+
+    int width, height;
+
+    GX2ScanTarget const scan_tgt;
+
+    uint32_t sz;
+};
+
+#define RENDER_MODE GX2_DRC_RENDER_MODE_SINGLE
+#define SURF_FMT    GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8
+
+struct game_screen drc;
+
+static void init_gamepad_screen(struct game_screen *screen) {
+    memset(screen, 0, sizeof(*screen));
+
+    screen->width = 854;
+    screen->height = 480;
+
+    uint32_t wtf;
+    GX2CalcDRCSize(RENDER_MODE, SURF_FMT, GX2_BUFFERING_MODE_DOUBLE,
+                   &screen->sz, &wtf);
+    OSReport("game_screen buffer size is 0x%08x\n", (unsigned)screen->sz);
+
+    MEMHeapHandle heap_mem2 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
+    screen->buf = MEMAllocFromExpHeapEx(heap_mem2, screen->sz, 4096);
+    OSReport("game_screen buffer allocated 0x%p\n", screen->buf);
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU, screen->buf, screen->sz);
+    GX2SetDRCBuffer(screen->buf, screen->sz, RENDER_MODE,
+                    SURF_FMT, GX2_BUFFERING_MODE_DOUBLE);
+
+
+    GX2ColorBuffer *col_buf = &screen->col_buf;
+    col_buf->surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
+    col_buf->surface.width = 854;
+    col_buf->surface.height = 480;
+    col_buf->surface.depth = 1;
+    col_buf->surface.mipLevels = 1;
+    col_buf->surface.format = SURF_FMT;
+    col_buf->surface.aa = GX2_AA_MODE1X;
+    col_buf->surface.use = GX2_SURFACE_USE_TEXTURE_COLOR_BUFFER_TV;
+    col_buf->viewNumSlices = 1;
+
+    GX2CalcSurfaceSizeAndAlignment(&col_buf->surface);
+    GX2InitColorBufferRegs(col_buf);
+
+    OSReport("game_screen color buffer imageSize is 0x%08x",
+             col_buf->surface.imageSize);
+    OSReport("game_screen color buffer alignment is 0x%08x",
+             col_buf->surface.alignment);
+
+    col_buf->surface.image =
+        MEMAllocFromBlockHeapEx(heap_blk_handle,
+                                col_buf->surface.imageSize,
+                                col_buf->surface.alignment);
+
+    OSReport("game_screen color buffer has been initialized");
+
+    GX2DepthBuffer *depth_buf = &screen->depth_buf;
+
+    depth_buf->surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
+    depth_buf->surface.width = 854;
+    depth_buf->surface.height = 480;
+    depth_buf->surface.depth = 1;
+    depth_buf->surface.mipLevels = 1;
+    depth_buf->surface.format = GX2_SURFACE_FORMAT_FLOAT_R32;
+    depth_buf->surface.aa = GX2_AA_MODE1X;
+    depth_buf->surface.use = GX2_SURFACE_USE_DEPTH_BUFFER |
+        GX2_SURFACE_USE_TEXTURE;
+    depth_buf->surface.tileMode = GX2_TILE_MODE_DEFAULT;
+    depth_buf->depthClear = 1.0f;
+    depth_buf->viewNumSlices = 1;
+
+    GX2CalcSurfaceSizeAndAlignment(&depth_buf->surface);
+    GX2InitDepthBufferRegs(depth_buf);
+
+    OSReport("depth_buf.surface.imageSize is 0x%08x",
+             depth_buf->surface.imageSize);
+    OSReport("depth_buf.surface.alignment is 0x%08x",
+             depth_buf->surface.alignment);
+    depth_buf->surface.image =
+        MEMAllocFromBlockHeapEx(heap_blk_handle,
+                                depth_buf->surface.imageSize,
+                                depth_buf->surface.alignment);
+    OSReport("depth_buf.surface.image is %p", depth_buf->surface.image);
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU,
+                  depth_buf->surface.image,
+                  depth_buf->surface.imageSize);
+
+
+
+    GX2ContextState *ctx_state = (GX2ContextState *)MEMAllocFromExpHeapEx(heap_mem2, sizeof(GX2ContextState), GX2_CONTEXT_STATE_ALIGNMENT);
+    screen->ctx_state = ctx_state;
+
+    GX2SetupContextStateEx(ctx_state, TRUE);
+
+    GX2SetColorControl(GX2_LOGIC_OP_COPY, 1, 0, 1);
+    GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA,
+                       GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
+                       TRUE, GX2_BLEND_MODE_SRC_ALPHA,
+                       GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
+    GX2SetSwapInterval(1);
+}
+
+void gx2glInit(void) {
+    heap_mem1 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
+    heap_mem2 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
+    heap_fg = MEMGetBaseHeapHandle(MEM_BASE_HEAP_FG);
+
+    void *block_heap_backing = MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1), BLOCK_HEAP_SIZE, 4);
+    heap_blk_handle = MEMInitBlockHeap(&heap_blk, block_heap_backing, ((char*)block_heap_backing) + BLOCK_HEAP_SIZE, NULL, 0, 5);
+
+    MEMAddBlockHeapTracking(heap_blk_handle, &tracking, 656);
+
+    OSReport("block_heap_backing is %p", block_heap_backing);
+    OSReport("heaps initialized");
+
+    cmdbuf_pool = MEMAllocFromExpHeapEx(heap_mem2, CMDBUF_POOL_SIZE, CMDBUF_POOL_ALIGN);
+
+    OSReport("cmdbuf_pool has been allocated; pointer is %p", cmdbuf_pool);
+
+    OSReport("About to call GX2Init");
+    uint32_t init_attribs[] = {
+        GX2_INIT_CMD_BUF_BASE, (uintptr_t)cmdbuf_pool,
+        GX2_INIT_CMD_BUF_POOL_SIZE, CMDBUF_POOL_SIZE,
+        GX2_INIT_END
+    };
+    GX2Init(init_attribs);
+
+    OSReport("setting allocator functions");
+    GX2RSetAllocator(my_alloc_fn, my_free_fn);
+
+    init_gamepad_screen(&drc);
+}
+
+static void *
+my_alloc_fn(GX2RResourceFlags flags, uint32_t size, uint32_t align) {
+    OSReport("ERROR: %s called.", __func__);
+    return MEMAllocFromExpHeapEx(heap_mem2, size, align);
+}
+
+static void
+my_free_fn(GX2RResourceFlags flags, void *block) {
+    // TODO: this
+    OSReport("ERROR: %s called.", __func__);
+}
 
 gx2glContext gx2glCreateContext(void) {
     gx2glContext handle;
@@ -89,7 +270,7 @@ gx2glContext gx2glCreateContext(void) {
     ctx->vertImmedPos.elemCount = 4;
     GX2RCreateBuffer(&ctx->vertImmedPos);
 
-    WHBGfxClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    /* WHBGfxClearColor(1.0f, 1.0f, 1.0f, 1.0f); */
 
     ctx->valid = 1;
 
@@ -119,17 +300,31 @@ void gx2glMakeCurrent(gx2glContext ctx) {
 }
 
 void gx2glBeginRender(void) {
-    WHBGfxBeginRender();
+    GX2SetContextState(drc.ctx_state);
+    // TODO: GX2Invaldiate some stuff?
+    GX2SetViewport(0, 0, drc.width, drc.height, 0, 1);
+    GX2SetScissor(0, 0, 854, 480);
+    GX2ClearColor(&drc.col_buf, 0.0f, 0.0f, 0.0f, 0.0f);
+    GX2ClearDepthStencilEx(&drc.depth_buf, 1.0f, 0, GX2_CLEAR_FLAGS_BOTH);
 
-    WHBGfxBeginRenderDRC();
+    GX2SetColorBuffer(&drc.col_buf, GX2_RENDER_TARGET_0);
+    GX2SetDepthBuffer(&drc.depth_buf);
+
     GX2SetFetchShader(&cur_ctx->shaderGroup.fetchShader);
     GX2SetVertexShader(cur_ctx->shaderGroup.vertexShader);
     GX2SetPixelShader(cur_ctx->shaderGroup.pixelShader);
 }
 
 void gx2glEndRender(void) {
-    WHBGfxFinishRenderDRC();
-    WHBGfxFinishRender();
+    GX2SetContextState(drc.ctx_state);
+    GX2CopyColorBufferToScanBuffer(&drc.col_buf, GX2_SCAN_TARGET_DRC);
+    GX2SwapScanBuffers();
+
+    GX2Flush();
+    GX2SetDRCEnable(1);
+    GX2SetTVEnable(0);
+    GX2WaitForVsync();
+    GX2DrawDone();
 }
 
 GLAPI void APIENTRY glShadeModel(GLenum mode) {
@@ -204,7 +399,7 @@ GLAPI void APIENTRY glClearDepth(double depth) {
 
 GLAPI void APIENTRY glClearColor(GLclampf red, GLclampf green,
                                  GLclampf blue, GLclampf alpha) {
-    WHBGfxClearColor(red, green, blue, alpha);
+    /* WHBGfxClearColor(red, green, blue, alpha); */
 }
 
 GLAPI void APIENTRY glHint(GLenum target, GLenum mode) {

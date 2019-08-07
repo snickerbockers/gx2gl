@@ -41,6 +41,8 @@ extern "C" {
 
 typedef int gx2glContext;
 
+void gx2glInit(void);
+
 gx2glContext gx2glCreateContext(void);
 void gx2glDestroyContext(gx2glContext handle);
 

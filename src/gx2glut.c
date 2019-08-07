@@ -66,8 +66,8 @@ void glutInitWindowSize(int width, int height) {
 
 void glutInit(int *argcp, char **argv) {
     WHBProcInit();
-    WHBGfxInit();
 
+    gx2glInit();
     gx2glutCtxHandle = gx2glCreateContext();
     gx2glMakeCurrent(gx2glutCtxHandle);
 }
