@@ -35,7 +35,6 @@
 #ifndef GX2GL_CONTEXT_H_
 #define GX2GL_CONTEXT_H_
 
-#include <gx2r/buffer.h>
 #include <whb/gfx.h>
 
 #include "matrix.h"
@@ -48,7 +47,6 @@ struct gx2gl_context {
     unsigned nVerts;
     GLenum polyMode;
     GLboolean immedMode;
-    GX2RBuffer vertImmedPos;
     WHBGfxShaderGroup shaderGroup;
     int valid;
     GLenum error;

@@ -64,6 +64,8 @@
 
 #define MAX_CONTEXTS 4
 
+#define VERT_LEN 4
+
 #define CMDBUF_POOL_SIZE 4194304
 #define CMDBUF_POOL_ALIGN 64
 
@@ -260,15 +262,7 @@ gx2glContext gx2glCreateContext(void) {
     WHBGfxInitFetchShader(&ctx->shaderGroup);
 
     ctx->maxVerts = 1024;
-    ctx->immedBuf = malloc(ctx->maxVerts * sizeof(float) * 4);
-
-    ctx->vertImmedPos.flags = (GX2RResourceFlags)(GX2R_RESOURCE_BIND_VERTEX_BUFFER |
-                                                  GX2R_RESOURCE_USAGE_CPU_READ |
-                                                  GX2R_RESOURCE_USAGE_CPU_WRITE |
-                                                  GX2R_RESOURCE_USAGE_GPU_READ);
-    ctx->vertImmedPos.elemSize = 4 * sizeof(float);
-    ctx->vertImmedPos.elemCount = 4;
-    GX2RCreateBuffer(&ctx->vertImmedPos);
+    ctx->immedBuf = MEMAllocFromExpHeapEx(heap_mem2, ctx->maxVerts * sizeof(float) * VERT_LEN, GX2_VERTEX_BUFFER_ALIGNMENT);
 
     /* WHBGfxClearColor(1.0f, 1.0f, 1.0f, 1.0f); */
 
@@ -288,8 +282,8 @@ void gx2glDestroyContext(gx2glContext handle) {
 
     ctx->valid = 0;
 
-    GX2RDestroyBufferEx(&ctx->vertImmedPos, 0);
-    free(ctx->immedBuf);
+    // TODO: free immedBuf
+    /* free(ctx->immedBuf); */
 
     memset(ctx, 0, sizeof(*ctx));
 }
@@ -346,10 +340,6 @@ GLAPI void APIENTRY glEnd(void) {
     cur_ctx->immedMode = GL_FALSE;
 
     if (cur_ctx->nVerts) {
-        void *copydst = GX2RLockBufferEx(&cur_ctx->vertImmedPos, (GX2RResourceFlags)0);
-        memcpy(copydst, cur_ctx->immedBuf, cur_ctx->nVerts * 4 * sizeof(float));
-        GX2RUnlockBufferEx(&cur_ctx->vertImmedPos, (GX2RResourceFlags)0);
-
         float mvp[16];
         gx2gl_get_mvp(mvp);
         float row0[4] = { mvp[0], mvp[4], mvp[8], mvp[12] };
@@ -367,16 +357,14 @@ GLAPI void APIENTRY glEnd(void) {
         GX2SetVertexUniformReg(8, 4, row2i);
         GX2SetVertexUniformReg(12, 4, row3i);
 
-        GX2RSetAttributeBuffer(&cur_ctx->vertImmedPos, 0,
-                               cur_ctx->vertImmedPos.elemSize, 0);
-        // TODO: mvp
+        GX2SetAttribBuffer(0, VERT_LEN * sizeof(float) * cur_ctx->nVerts, VERT_LEN * sizeof(float), cur_ctx->immedBuf);
         GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLES, cur_ctx->nVerts, 0, 1);
     }
 }
 
 GLAPI void APIENTRY glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
     if (cur_ctx->immedMode == GL_TRUE && cur_ctx->polyMode == GL_TRIANGLES) {
-        float *vout = cur_ctx->immedBuf + 4 * cur_ctx->nVerts++;
+        float *vout = cur_ctx->immedBuf + VERT_LEN * cur_ctx->nVerts++;
         vout[0] = x;
         vout[1] = y;
         vout[2] = z;
