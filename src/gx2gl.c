@@ -73,8 +73,7 @@ static void *cmdbuf_pool;
 
 static struct gx2gl_context gx2gl_ctx_arr[MAX_CONTEXTS];
 struct gx2gl_context *cur_ctx;
-static MEMHeapHandle heap_mem1, heap_fg, heap_mem2, heap_blk_handle;
-static MEMBlockHeap heap_blk;
+static MEMHeapHandle heap_mem1, heap_fg, heap_mem2;
 static MEMBlockHeapTracking tracking;
 
 static void *
@@ -141,7 +140,7 @@ static void init_gamepad_screen(struct game_screen *screen) {
              col_buf->surface.alignment);
 
     col_buf->surface.image =
-        MEMAllocFromBlockHeapEx(heap_blk_handle,
+        MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1),
                                 col_buf->surface.imageSize,
                                 col_buf->surface.alignment);
 
@@ -170,7 +169,7 @@ static void init_gamepad_screen(struct game_screen *screen) {
     OSReport("depth_buf.surface.alignment is 0x%08x",
              depth_buf->surface.alignment);
     depth_buf->surface.image =
-        MEMAllocFromBlockHeapEx(heap_blk_handle,
+        MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1),
                                 depth_buf->surface.imageSize,
                                 depth_buf->surface.alignment);
     OSReport("depth_buf.surface.image is %p", depth_buf->surface.image);
@@ -198,12 +197,6 @@ void gx2glInit(void) {
     heap_mem2 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
     heap_fg = MEMGetBaseHeapHandle(MEM_BASE_HEAP_FG);
 
-    void *block_heap_backing = MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1), BLOCK_HEAP_SIZE, 4);
-    heap_blk_handle = MEMInitBlockHeap(&heap_blk, block_heap_backing, ((char*)block_heap_backing) + BLOCK_HEAP_SIZE, NULL, 0, 5);
-
-    MEMAddBlockHeapTracking(heap_blk_handle, &tracking, 656);
-
-    OSReport("block_heap_backing is %p", block_heap_backing);
     OSReport("heaps initialized");
 
     cmdbuf_pool = MEMAllocFromExpHeapEx(heap_mem2, CMDBUF_POOL_SIZE, CMDBUF_POOL_ALIGN);
