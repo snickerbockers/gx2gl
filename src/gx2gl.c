@@ -35,6 +35,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <gx2/draw.h>
 #include <gx2r/draw.h>
 #include <gx2r/buffer.h>
@@ -94,32 +95,68 @@ struct game_screen {
     GX2ScanTarget const scan_tgt;
 
     uint32_t sz;
+
+    bool in_use;
 };
 
 #define RENDER_MODE GX2_DRC_RENDER_MODE_SINGLE
 #define SURF_FMT    GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8
 
-struct game_screen drc;
+#define GAME_SCREEN_DRC 0
+#define GAME_SCREEN_TV 1
+#define GAME_SCREEN_COUNT 2
+
+static struct game_screen screens[GAME_SCREEN_COUNT];
+static struct game_screen *cur_screen;
+
+static void init_gamepad_screen(struct game_screen *screen);
+static void cleanup_gamepad_screen(struct game_screen *screen);
+
+gx2glScreen gx2glCreateScreen(gx2glScreenDst dst,
+                              gx2glScreenHints const *hints) {
+    int screen_idx;
+    switch (dst) {
+    case GX2GL_GAMEPAD:
+        screen_idx = GAME_SCREEN_DRC;
+        break;
+    case GX2GL_TV:
+        screen_idx = GAME_SCREEN_TV;
+        break;
+    default:
+        return -1;
+    }
+
+    struct game_screen *screen = screens + screen_idx;
+    if (screen->in_use)
+        return -1;
+
+    if (screen_idx == GAME_SCREEN_DRC)
+        init_gamepad_screen(screen);
+    else
+        return -1; // TODO: GAME_SCREEN_TV is unimplemented
+
+    return screen_idx;
+}
 
 static void init_gamepad_screen(struct game_screen *screen) {
     memset(screen, 0, sizeof(*screen));
 
     screen->width = 854;
     screen->height = 480;
+    screen->in_use = true;
 
+    // create scan buffer
     uint32_t wtf;
     GX2CalcDRCSize(RENDER_MODE, SURF_FMT, GX2_BUFFERING_MODE_DOUBLE,
                    &screen->sz, &wtf);
-    OSReport("game_screen buffer size is 0x%08x\n", (unsigned)screen->sz);
-
     MEMHeapHandle heap_mem2 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
     screen->buf = MEMAllocFromExpHeapEx(heap_mem2, screen->sz, 4096);
-    OSReport("game_screen buffer allocated 0x%p\n", screen->buf);
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU, screen->buf, screen->sz);
     GX2SetDRCBuffer(screen->buf, screen->sz, RENDER_MODE,
                     SURF_FMT, GX2_BUFFERING_MODE_DOUBLE);
 
 
+    // create color buffer
     GX2ColorBuffer *col_buf = &screen->col_buf;
     col_buf->surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
     col_buf->surface.width = 854;
@@ -133,21 +170,13 @@ static void init_gamepad_screen(struct game_screen *screen) {
 
     GX2CalcSurfaceSizeAndAlignment(&col_buf->surface);
     GX2InitColorBufferRegs(col_buf);
-
-    OSReport("game_screen color buffer imageSize is 0x%08x",
-             col_buf->surface.imageSize);
-    OSReport("game_screen color buffer alignment is 0x%08x",
-             col_buf->surface.alignment);
-
     col_buf->surface.image =
         MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1),
                                 col_buf->surface.imageSize,
                                 col_buf->surface.alignment);
 
-    OSReport("game_screen color buffer has been initialized");
-
+    // create depth buffer
     GX2DepthBuffer *depth_buf = &screen->depth_buf;
-
     depth_buf->surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
     depth_buf->surface.width = 854;
     depth_buf->surface.height = 480;
@@ -163,33 +192,35 @@ static void init_gamepad_screen(struct game_screen *screen) {
 
     GX2CalcSurfaceSizeAndAlignment(&depth_buf->surface);
     GX2InitDepthBufferRegs(depth_buf);
-
-    OSReport("depth_buf.surface.imageSize is 0x%08x",
-             depth_buf->surface.imageSize);
-    OSReport("depth_buf.surface.alignment is 0x%08x",
-             depth_buf->surface.alignment);
     depth_buf->surface.image =
         MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1),
                                 depth_buf->surface.imageSize,
                                 depth_buf->surface.alignment);
-    OSReport("depth_buf.surface.image is %p", depth_buf->surface.image);
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU,
                   depth_buf->surface.image,
                   depth_buf->surface.imageSize);
 
 
-
+    // create context state
     GX2ContextState *ctx_state = (GX2ContextState *)MEMAllocFromExpHeapEx(heap_mem2, sizeof(GX2ContextState), GX2_CONTEXT_STATE_ALIGNMENT);
     screen->ctx_state = ctx_state;
-
     GX2SetupContextStateEx(ctx_state, TRUE);
 
+    // TODO: should this be a separate function?
     GX2SetColorControl(GX2_LOGIC_OP_COPY, 1, 0, 1);
     GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA,
                        GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
                        TRUE, GX2_BLEND_MODE_SRC_ALPHA,
                        GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
     GX2SetSwapInterval(1);
+}
+
+static void cleanup_gamepad_screen(struct game_screen *screen) {
+    MEMFreeToExpHeap(heap_mem2, screen->ctx_state);
+    MEMFreeToExpHeap(heap_mem2, screen->ctx_state);
+    MEMFreeToExpHeap(heap_mem2, screen->depth_buf.surface.image);
+    MEMFreeToExpHeap(heap_mem2, screen->col_buf.surface.image);
+    MEMFreeToExpHeap(heap_mem2, screen->buf);
 }
 
 void gx2glInit(void) {
@@ -213,8 +244,21 @@ void gx2glInit(void) {
 
     OSReport("setting allocator functions");
     GX2RSetAllocator(my_alloc_fn, my_free_fn);
+}
 
-    init_gamepad_screen(&drc);
+void gx2glCleanup(void) {
+    gx2glContext ctx;
+    for (ctx = 0; ctx < MAX_CONTEXTS; ctx++)
+        if (gx2gl_ctx_arr[ctx].valid)
+            gx2glDestroyContext(ctx);
+
+    if (screens[GAME_SCREEN_DRC].in_use)
+        cleanup_gamepad_screen(screens + GAME_SCREEN_DRC);
+
+    MEMFreeToExpHeap(heap_mem2, cmdbuf_pool);
+    cmdbuf_pool = NULL;
+
+    GX2Shutdown();
 }
 
 static void *
@@ -286,27 +330,31 @@ void gx2glDestroyContext(gx2glContext handle) {
 
     ctx->valid = 0;
 
-    // TODO: free immedBuf
-    /* free(ctx->immedBuf); */
+    free(ctx->immedBuf);
+    WHBGfxFreeShaderGroup(&ctx->shaderGroup);
 
     memset(ctx, 0, sizeof(*ctx));
 }
 
-void gx2glMakeCurrent(gx2glContext ctx) {
-    if (ctx < MAX_CONTEXTS && gx2gl_ctx_arr[ctx].valid)
+void gx2glMakeCurrent(gx2glContext ctx, gx2glScreen screen) {
+    if (ctx < MAX_CONTEXTS && gx2gl_ctx_arr[ctx].valid &&
+        screen < GAME_SCREEN_COUNT && screens[screen].in_use) {
         cur_ctx = gx2gl_ctx_arr + ctx;
+        cur_screen = screens + screen;
+    }
 }
 
 void gx2glBeginRender(void) {
-    GX2SetContextState(drc.ctx_state);
+    GX2SetContextState(cur_screen->ctx_state);
     // TODO: GX2Invaldiate some stuff?
-    GX2SetViewport(0, 0, drc.width, drc.height, 0, 1);
+    GX2SetViewport(0, 0, cur_screen->width, cur_screen->height, 0, 1);
     GX2SetScissor(0, 0, 854, 480);
-    GX2ClearColor(&drc.col_buf, 0.0f, 0.0f, 0.0f, 0.0f);
-    GX2ClearDepthStencilEx(&drc.depth_buf, 1.0f, 0, GX2_CLEAR_FLAGS_BOTH);
+    GX2ClearColor(&cur_screen->col_buf, 0.0f, 0.0f, 0.0f, 0.0f);
+    GX2ClearDepthStencilEx(&cur_screen->depth_buf, 1.0f, 0,
+                           GX2_CLEAR_FLAGS_BOTH);
 
-    GX2SetColorBuffer(&drc.col_buf, GX2_RENDER_TARGET_0);
-    GX2SetDepthBuffer(&drc.depth_buf);
+    GX2SetColorBuffer(&cur_screen->col_buf, GX2_RENDER_TARGET_0);
+    GX2SetDepthBuffer(&cur_screen->depth_buf);
 
     GX2SetFetchShader(&cur_ctx->shaderGroup.fetchShader);
     GX2SetVertexShader(cur_ctx->shaderGroup.vertexShader);
@@ -314,8 +362,8 @@ void gx2glBeginRender(void) {
 }
 
 void gx2glEndRender(void) {
-    GX2SetContextState(drc.ctx_state);
-    GX2CopyColorBufferToScanBuffer(&drc.col_buf, GX2_SCAN_TARGET_DRC);
+    GX2SetContextState(cur_screen->ctx_state);
+    GX2CopyColorBufferToScanBuffer(&cur_screen->col_buf, GX2_SCAN_TARGET_DRC);
     GX2SwapScanBuffers();
 
     GX2Flush();

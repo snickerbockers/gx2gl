@@ -57,6 +57,7 @@ static void (*gx2glutDisplayFunc)(void);
 static void (*gx2glutReshapeFunc)(int, int);
 
 static gx2glContext gx2glutCtxHandle = -1;
+static gx2glScreen gx2glutDrc = -1;
 
 #define DRC_WIDTH 854
 #define DRC_HEIGHT 480
@@ -69,7 +70,8 @@ void glutInit(int *argcp, char **argv) {
 
     gx2glInit();
     gx2glutCtxHandle = gx2glCreateContext();
-    gx2glMakeCurrent(gx2glutCtxHandle);
+    gx2glutDrc = gx2glCreateScreen(GX2GL_GAMEPAD, NULL);
+    gx2glMakeCurrent(gx2glutCtxHandle, gx2glutDrc);
 }
 
 void glutInitDisplayMode(unsigned mode) {
@@ -131,6 +133,7 @@ void glutIdleFunc(void (*func)(void)) {
 
 static void glutDoCleanup(void) {
     gx2glDestroyContext(gx2glutCtxHandle);
+    gx2glCleanup();
 
     WHBGfxShutdown();
     WHBProcShutdown();

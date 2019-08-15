@@ -40,13 +40,28 @@ extern "C" {
 #endif
 
 typedef int gx2glContext;
+typedef int gx2glScreen;
+
+typedef enum {
+    GX2GL_GAMEPAD,
+    GX2GL_TV
+} gx2glScreenDst;
+
+typedef struct gx2glScreenHints {
+    int width;
+    int height;
+} gx2glScreenHints;
 
 void gx2glInit(void);
+void gx2glCleanup(void);
+
+gx2glScreen gx2glCreateScreen(gx2glScreenDst dst,
+                              gx2glScreenHints const *hints);
 
 gx2glContext gx2glCreateContext(void);
 void gx2glDestroyContext(gx2glContext handle);
 
-void gx2glMakeCurrent(gx2glContext ctx);
+void gx2glMakeCurrent(gx2glContext ctx, gx2glScreen screen);
 
 void gx2glBeginRender(void);
 void gx2glEndRender(void);
