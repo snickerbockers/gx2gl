@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
-set(CMAKE_TOOLCHAIN_FILE $ENV{WUT_ROOT}/share/wut.toolchain.cmake)
 project(lesson02 CXX)
-include("${WUT_ROOT}/share/wut.cmake" REQUIRED)
+include("${DEVKITPRO}/wut/share/wut.cmake" REQUIRED)
 
 add_executable(lesson02 lesson2.cpp)
 
