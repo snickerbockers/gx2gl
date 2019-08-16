@@ -92,7 +92,7 @@ struct game_screen {
 
     int width, height;
 
-    GX2ScanTarget const scan_tgt;
+    GX2ScanTarget scan_tgt;
 
     uint32_t sz;
 
@@ -144,6 +144,8 @@ static void init_gamepad_screen(struct game_screen *screen) {
     screen->width = 854;
     screen->height = 480;
     screen->in_use = true;
+
+    screen->scan_tgt = GX2_SCAN_TARGET_DRC;
 
     // create scan buffer
     uint32_t wtf;
@@ -363,7 +365,7 @@ void gx2glBeginRender(void) {
 
 void gx2glEndRender(void) {
     GX2SetContextState(cur_screen->ctx_state);
-    GX2CopyColorBufferToScanBuffer(&cur_screen->col_buf, GX2_SCAN_TARGET_DRC);
+    GX2CopyColorBufferToScanBuffer(&cur_screen->col_buf, cur_screen->scan_tgt);
     GX2SwapScanBuffers();
 
     GX2Flush();
