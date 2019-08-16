@@ -461,7 +461,9 @@ void gx2glEndRender(void) {
     GX2SetContextState(cur_screen->ctx_state);
     GX2CopyColorBufferToScanBuffer(&cur_screen->col_buf, cur_screen->scan_tgt);
     GX2SwapScanBuffers();
+}
 
+void gx2glSwapBuffers(void) {
     GX2Flush();
     GX2SetDRCEnable(screens[GAME_SCREEN_DRC].in_use);
     GX2SetTVEnable(screens[GAME_SCREEN_TV].in_use);

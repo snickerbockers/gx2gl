@@ -119,6 +119,7 @@ void glutDestroyWindow(int win) {
 }
 
 void glutSwapBuffers(void){
+    gx2glSwapBuffers();
 }
 
 GLint glutGet(int state) {

@@ -63,6 +63,7 @@ void gx2glDestroyContext(gx2glContext handle);
 
 void gx2glMakeCurrent(gx2glContext ctx, gx2glScreen screen);
 
+void gx2glSwapBuffers(void);
 void gx2glBeginRender(void);
 void gx2glEndRender(void);
 
