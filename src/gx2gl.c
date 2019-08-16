@@ -99,7 +99,8 @@ struct game_screen {
     bool in_use;
 };
 
-#define RENDER_MODE GX2_DRC_RENDER_MODE_SINGLE
+#define DRC_RENDER_MODE GX2_DRC_RENDER_MODE_SINGLE
+#define TV_RENDER_MODE GX2_TV_RENDER_MODE_WIDE_720P
 #define SURF_FMT    GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8
 
 #define GAME_SCREEN_DRC 0
@@ -110,7 +111,9 @@ static struct game_screen screens[GAME_SCREEN_COUNT];
 static struct game_screen *cur_screen;
 
 static void init_gamepad_screen(struct game_screen *screen);
+static void init_tv_screen(struct game_screen *screen);
 static void cleanup_gamepad_screen(struct game_screen *screen);
+static void cleanup_tv_screen(struct game_screen *screen);
 
 gx2glScreen gx2glCreateScreen(gx2glScreenDst dst,
                               gx2glScreenHints const *hints) {
@@ -132,8 +135,10 @@ gx2glScreen gx2glCreateScreen(gx2glScreenDst dst,
 
     if (screen_idx == GAME_SCREEN_DRC)
         init_gamepad_screen(screen);
+    else if (screen_idx == GAME_SCREEN_TV)
+        init_tv_screen(screen);
     else
-        return -1; // TODO: GAME_SCREEN_TV is unimplemented
+        return -1;
 
     return screen_idx;
 }
@@ -149,20 +154,20 @@ static void init_gamepad_screen(struct game_screen *screen) {
 
     // create scan buffer
     uint32_t wtf;
-    GX2CalcDRCSize(RENDER_MODE, SURF_FMT, GX2_BUFFERING_MODE_DOUBLE,
+    GX2CalcDRCSize(DRC_RENDER_MODE, SURF_FMT, GX2_BUFFERING_MODE_DOUBLE,
                    &screen->sz, &wtf);
     MEMHeapHandle heap_mem2 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
     screen->buf = MEMAllocFromExpHeapEx(heap_mem2, screen->sz, 4096);
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU, screen->buf, screen->sz);
-    GX2SetDRCBuffer(screen->buf, screen->sz, RENDER_MODE,
+    GX2SetDRCBuffer(screen->buf, screen->sz, DRC_RENDER_MODE,
                     SURF_FMT, GX2_BUFFERING_MODE_DOUBLE);
 
 
     // create color buffer
     GX2ColorBuffer *col_buf = &screen->col_buf;
     col_buf->surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
-    col_buf->surface.width = 854;
-    col_buf->surface.height = 480;
+    col_buf->surface.width = screen->width;
+    col_buf->surface.height = screen->height;
     col_buf->surface.depth = 1;
     col_buf->surface.mipLevels = 1;
     col_buf->surface.format = SURF_FMT;
@@ -180,8 +185,87 @@ static void init_gamepad_screen(struct game_screen *screen) {
     // create depth buffer
     GX2DepthBuffer *depth_buf = &screen->depth_buf;
     depth_buf->surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
-    depth_buf->surface.width = 854;
-    depth_buf->surface.height = 480;
+    depth_buf->surface.width = screen->width;
+    depth_buf->surface.height = screen->height;
+    depth_buf->surface.depth = 1;
+    depth_buf->surface.mipLevels = 1;
+    depth_buf->surface.format = GX2_SURFACE_FORMAT_FLOAT_R32;
+    depth_buf->surface.aa = GX2_AA_MODE1X;
+    depth_buf->surface.use = GX2_SURFACE_USE_DEPTH_BUFFER |
+        GX2_SURFACE_USE_TEXTURE;
+    depth_buf->surface.tileMode = GX2_TILE_MODE_DEFAULT;
+    depth_buf->depthClear = 1.0f;
+    depth_buf->viewNumSlices = 1;
+
+    GX2CalcSurfaceSizeAndAlignment(&depth_buf->surface);
+    GX2InitDepthBufferRegs(depth_buf);
+    depth_buf->surface.image =
+        MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1),
+                                depth_buf->surface.imageSize,
+                                depth_buf->surface.alignment);
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU,
+                  depth_buf->surface.image,
+                  depth_buf->surface.imageSize);
+
+
+    // create context state
+    GX2ContextState *ctx_state = (GX2ContextState *)MEMAllocFromExpHeapEx(heap_mem2, sizeof(GX2ContextState), GX2_CONTEXT_STATE_ALIGNMENT);
+    screen->ctx_state = ctx_state;
+    GX2SetupContextStateEx(ctx_state, TRUE);
+
+    // TODO: should this be a separate function?
+    GX2SetColorControl(GX2_LOGIC_OP_COPY, 1, 0, 1);
+    GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA,
+                       GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
+                       TRUE, GX2_BLEND_MODE_SRC_ALPHA,
+                       GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
+    GX2SetSwapInterval(1);
+}
+
+static void init_tv_screen(struct game_screen *screen) {
+    memset(screen, 0, sizeof(*screen));
+
+    screen->width = 768;
+    screen->height = 480;
+    screen->in_use = true;
+
+    screen->scan_tgt = GX2_SCAN_TARGET_TV;
+
+    // create scan buffer
+    uint32_t wtf;
+    GX2CalcTVSize(TV_RENDER_MODE, SURF_FMT, GX2_BUFFERING_MODE_DOUBLE,
+                  &screen->sz, &wtf);
+    MEMHeapHandle heap_mem2 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
+    screen->buf = MEMAllocFromExpHeapEx(heap_mem2, screen->sz, 4096);
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU, screen->buf, screen->sz);
+    GX2SetTVBuffer(screen->buf, screen->sz, TV_RENDER_MODE,
+                   SURF_FMT, GX2_BUFFERING_MODE_DOUBLE);
+
+
+    // create color buffer
+    GX2ColorBuffer *col_buf = &screen->col_buf;
+    col_buf->surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
+    col_buf->surface.width = screen->width;
+    col_buf->surface.height = screen->height;
+    col_buf->surface.depth = 1;
+    col_buf->surface.mipLevels = 1;
+    col_buf->surface.format = SURF_FMT;
+    col_buf->surface.aa = GX2_AA_MODE1X;
+    col_buf->surface.use = GX2_SURFACE_USE_TEXTURE_COLOR_BUFFER_TV;
+    col_buf->viewNumSlices = 1;
+
+    GX2CalcSurfaceSizeAndAlignment(&col_buf->surface);
+    GX2InitColorBufferRegs(col_buf);
+    col_buf->surface.image =
+        MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1),
+                                col_buf->surface.imageSize,
+                                col_buf->surface.alignment);
+
+    // create depth buffer
+    GX2DepthBuffer *depth_buf = &screen->depth_buf;
+    depth_buf->surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
+    depth_buf->surface.width = screen->width;
+    depth_buf->surface.height = screen->height;
     depth_buf->surface.depth = 1;
     depth_buf->surface.mipLevels = 1;
     depth_buf->surface.format = GX2_SURFACE_FORMAT_FLOAT_R32;
@@ -225,6 +309,14 @@ static void cleanup_gamepad_screen(struct game_screen *screen) {
     MEMFreeToExpHeap(heap_mem2, screen->buf);
 }
 
+static void cleanup_tv_screen(struct game_screen *screen) {
+    MEMFreeToExpHeap(heap_mem2, screen->ctx_state);
+    MEMFreeToExpHeap(heap_mem2, screen->ctx_state);
+    MEMFreeToExpHeap(heap_mem2, screen->depth_buf.surface.image);
+    MEMFreeToExpHeap(heap_mem2, screen->col_buf.surface.image);
+    MEMFreeToExpHeap(heap_mem2, screen->buf);
+}
+
 void gx2glInit(void) {
     heap_mem1 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
     heap_mem2 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
@@ -256,6 +348,8 @@ void gx2glCleanup(void) {
 
     if (screens[GAME_SCREEN_DRC].in_use)
         cleanup_gamepad_screen(screens + GAME_SCREEN_DRC);
+    if (screens[GAME_SCREEN_TV].in_use)
+        cleanup_tv_screen(screens + GAME_SCREEN_TV);
 
     MEMFreeToExpHeap(heap_mem2, cmdbuf_pool);
     cmdbuf_pool = NULL;
@@ -350,7 +444,7 @@ void gx2glBeginRender(void) {
     GX2SetContextState(cur_screen->ctx_state);
     // TODO: GX2Invaldiate some stuff?
     GX2SetViewport(0, 0, cur_screen->width, cur_screen->height, 0, 1);
-    GX2SetScissor(0, 0, 854, 480);
+    GX2SetScissor(0, 0, cur_screen->width, cur_screen->height);
     GX2ClearColor(&cur_screen->col_buf, 0.0f, 0.0f, 0.0f, 0.0f);
     GX2ClearDepthStencilEx(&cur_screen->depth_buf, 1.0f, 0,
                            GX2_CLEAR_FLAGS_BOTH);
@@ -369,8 +463,8 @@ void gx2glEndRender(void) {
     GX2SwapScanBuffers();
 
     GX2Flush();
-    GX2SetDRCEnable(1);
-    GX2SetTVEnable(0);
+    GX2SetDRCEnable(screens[GAME_SCREEN_DRC].in_use);
+    GX2SetTVEnable(screens[GAME_SCREEN_TV].in_use);
     GX2WaitForVsync();
     GX2DrawDone();
 }
