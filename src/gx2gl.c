@@ -303,14 +303,12 @@ static void init_tv_screen(struct game_screen *screen) {
 
 static void cleanup_gamepad_screen(struct game_screen *screen) {
     MEMFreeToExpHeap(heap_mem2, screen->ctx_state);
-    MEMFreeToExpHeap(heap_mem2, screen->ctx_state);
     MEMFreeToExpHeap(heap_mem2, screen->depth_buf.surface.image);
     MEMFreeToExpHeap(heap_mem2, screen->col_buf.surface.image);
     MEMFreeToExpHeap(heap_mem2, screen->buf);
 }
 
 static void cleanup_tv_screen(struct game_screen *screen) {
-    MEMFreeToExpHeap(heap_mem2, screen->ctx_state);
     MEMFreeToExpHeap(heap_mem2, screen->ctx_state);
     MEMFreeToExpHeap(heap_mem2, screen->depth_buf.surface.image);
     MEMFreeToExpHeap(heap_mem2, screen->col_buf.surface.image);
