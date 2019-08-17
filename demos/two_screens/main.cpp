@@ -68,7 +68,6 @@ int main(int argc, char **argv) {
 
     gx2glCleanup();
 
-    WHBGfxShutdown();
     WHBProcShutdown();
 
     return 0;
