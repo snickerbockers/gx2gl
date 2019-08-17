@@ -136,7 +136,6 @@ static void glutDoCleanup(void) {
     gx2glDestroyContext(gx2glutCtxHandle);
     gx2glCleanup();
 
-    WHBGfxShutdown();
     WHBProcShutdown();
 }
 
