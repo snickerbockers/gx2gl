@@ -441,6 +441,8 @@ void gx2glMakeCurrent(gx2glContext ctx, gx2glScreen screen) {
 }
 
 void gx2glBeginRender(void) {
+    GX2WaitForVsync();
+
     GX2SetContextState(cur_screen->ctx_state);
     // TODO: GX2Invaldiate some stuff?
     GX2SetViewport(0, 0, cur_screen->width, cur_screen->height, 0, 1);
@@ -458,16 +460,14 @@ void gx2glBeginRender(void) {
 }
 
 void gx2glEndRender(void) {
-    GX2SetContextState(cur_screen->ctx_state);
     GX2CopyColorBufferToScanBuffer(&cur_screen->col_buf, cur_screen->scan_tgt);
-    GX2SwapScanBuffers();
 }
 
 void gx2glSwapBuffers(void) {
+    GX2SwapScanBuffers();
     GX2Flush();
     GX2SetDRCEnable(screens[GAME_SCREEN_DRC].in_use);
     GX2SetTVEnable(screens[GAME_SCREEN_TV].in_use);
-    GX2WaitForVsync();
     GX2DrawDone();
 }
 
