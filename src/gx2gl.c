@@ -451,6 +451,19 @@ void gx2glBeginRender(void) {
     GX2ClearDepthStencilEx(&cur_screen->depth_buf, 1.0f, 0,
                            GX2_CLEAR_FLAGS_BOTH);
 
+    /*
+     * XXX This call to GX2SetContextState may appear to be redundant, but it is
+     * actually VERY FUCKING IMPORTANT.  If you do not call it a second time
+     * here, nothing will appear onscreen.  I do not know why that is.
+     *
+     * I have also observed official releases making a redundant call to
+     * GX2SetContextState, so this is apparently a legitimate requirement for
+     * some reason.
+     *
+     * DO NOT DELETE.
+     */
+    GX2SetContextState(cur_screen->ctx_state);
+
     GX2SetColorBuffer(&cur_screen->col_buf, GX2_RENDER_TARGET_0);
     GX2SetDepthBuffer(&cur_screen->depth_buf);
 
