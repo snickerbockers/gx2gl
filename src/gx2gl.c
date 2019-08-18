@@ -490,6 +490,9 @@ GLAPI void APIENTRY glEnd(void) {
     cur_ctx->immedMode = GL_FALSE;
 
     if (cur_ctx->nVerts) {
+        GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, cur_ctx->immedBuf,
+                      sizeof(float) * VERT_LEN * cur_ctx->maxVerts);
+
         float mvp[16];
         gx2gl_get_mvp(mvp);
         float row0[4] = { mvp[0], mvp[4], mvp[8], mvp[12] };
