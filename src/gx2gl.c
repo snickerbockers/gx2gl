@@ -178,9 +178,9 @@ static void init_gamepad_screen(struct game_screen *screen) {
     GX2CalcSurfaceSizeAndAlignment(&col_buf->surface);
     GX2InitColorBufferRegs(col_buf);
     col_buf->surface.image =
-        MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1),
-                                col_buf->surface.imageSize,
-                                col_buf->surface.alignment);
+        MEMAllocFromExpHeapEx(heap_mem2,
+                              col_buf->surface.imageSize,
+                              col_buf->surface.alignment);
 
     // create depth buffer
     GX2DepthBuffer *depth_buf = &screen->depth_buf;
@@ -200,9 +200,9 @@ static void init_gamepad_screen(struct game_screen *screen) {
     GX2CalcSurfaceSizeAndAlignment(&depth_buf->surface);
     GX2InitDepthBufferRegs(depth_buf);
     depth_buf->surface.image =
-        MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1),
-                                depth_buf->surface.imageSize,
-                                depth_buf->surface.alignment);
+        MEMAllocFromExpHeapEx(heap_mem2,
+                              depth_buf->surface.imageSize,
+                              depth_buf->surface.alignment);
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU,
                   depth_buf->surface.image,
                   depth_buf->surface.imageSize);
@@ -257,9 +257,9 @@ static void init_tv_screen(struct game_screen *screen) {
     GX2CalcSurfaceSizeAndAlignment(&col_buf->surface);
     GX2InitColorBufferRegs(col_buf);
     col_buf->surface.image =
-        MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1),
-                                col_buf->surface.imageSize,
-                                col_buf->surface.alignment);
+        MEMAllocFromExpHeapEx(heap_mem2,
+                              col_buf->surface.imageSize,
+                              col_buf->surface.alignment);
 
     // create depth buffer
     GX2DepthBuffer *depth_buf = &screen->depth_buf;
@@ -279,9 +279,9 @@ static void init_tv_screen(struct game_screen *screen) {
     GX2CalcSurfaceSizeAndAlignment(&depth_buf->surface);
     GX2InitDepthBufferRegs(depth_buf);
     depth_buf->surface.image =
-        MEMAllocFromFrmHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1),
-                                depth_buf->surface.imageSize,
-                                depth_buf->surface.alignment);
+        MEMAllocFromExpHeapEx(heap_mem2,
+                              depth_buf->surface.imageSize,
+                              depth_buf->surface.alignment);
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU,
                   depth_buf->surface.image,
                   depth_buf->surface.imageSize);
