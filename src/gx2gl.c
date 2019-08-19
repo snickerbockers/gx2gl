@@ -395,14 +395,6 @@ gx2glContext gx2glCreateContext(void) {
     }
     WHBGfxInitShaderAttribute(&ctx->shaderGroup, "vert_pos", 0, 0,
                               GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
-    WHBGfxInitShaderAttribute(&ctx->shaderGroup, "mvp_row0", 1, 0,
-                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
-    WHBGfxInitShaderAttribute(&ctx->shaderGroup, "mvp_row1", 2, 0,
-                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
-    WHBGfxInitShaderAttribute(&ctx->shaderGroup, "mvp_row2", 3, 0,
-                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
-    WHBGfxInitShaderAttribute(&ctx->shaderGroup, "mvp_row3", 4, 0,
-                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
     WHBGfxInitFetchShader(&ctx->shaderGroup);
 
     ctx->maxVerts = 1024;
