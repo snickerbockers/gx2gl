@@ -34,6 +34,9 @@
 ; $ATTRIB_VARS[0].type = "Float4"
 ; $ATTRIB_VARS[0].location = 0
 
+; $NUM_SPI_VS_OUT_ID = 1
+; $SPI_VS_OUT_ID[0].SEMANTIC_0 = 0
+
 00 CALL_FS
 
 01 ALU_PUSH_BEFORE :
@@ -57,5 +60,11 @@
          z: DOT4 ____,   R1.z, C3.z
          w: DOT4 R2.w,   R1.w, C3.w
 
+    4   x: MOV           R3.x, 1.0
+        y: MOV           R3.y, 1.0
+        z: MOV           R3.z, 1.0
+        w: MOV           R3.w, 1.0
+
 02 EXP_DONE: POS0, R2.xyzw
+03 EXP_DONE: PARAM0, R3.xyzw
 END_OF_PROGRAM
