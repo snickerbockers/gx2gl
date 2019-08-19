@@ -33,6 +33,9 @@
 ; $ATTRIB_VARS[0].name = "vert_pos"
 ; $ATTRIB_VARS[0].type = "Float4"
 ; $ATTRIB_VARS[0].location = 0
+; $ATTRIB_VARS[1].name = "vert_col"
+; $ATTRIB_VARS[1].type = "Float4"
+; $ATTRIB_VARS[1].location = 1
 
 ; $NUM_SPI_VS_OUT_ID = 1
 ; $SPI_VS_OUT_ID[0].SEMANTIC_0 = 0
@@ -40,31 +43,26 @@
 00 CALL_FS
 
 01 ALU_PUSH_BEFORE :
-    0    x: DOT4 R2.x,   R1.x, C0.x
+    0    x: DOT4 R3.x,   R1.x, C0.x
          y: DOT4 ____,   R1.y, C0.y
          z: DOT4 ____,   R1.z, C0.z
          w: DOT4 ____,   R1.w, C0.w
 
     1    x: DOT4 ____,   R1.x, C1.x
-         y: DOT4 R2.y,   R1.y, C1.y
+         y: DOT4 R3.y,   R1.y, C1.y
          z: DOT4 ____,   R1.z, C1.z
          w: DOT4 ____,   R1.w, C1.w
 
     2    x: DOT4 ____,   R1.x, C2.x
          y: DOT4 ____,   R1.y, C2.y
-         z: DOT4 R2.z,   R1.z, C2.z
+         z: DOT4 R3.z,   R1.z, C2.z
          w: DOT4 ____,   R1.w, C2.w
 
     3    x: DOT4 ____,   R1.x, C3.x
          y: DOT4 ____,   R1.y, C3.y
          z: DOT4 ____,   R1.z, C3.z
-         w: DOT4 R2.w,   R1.w, C3.w
+         w: DOT4 R3.w,   R1.w, C3.w
 
-    4   x: MOV           R3.x, 1.0
-        y: MOV           R3.y, 1.0
-        z: MOV           R3.z, 1.0
-        w: MOV           R3.w, 1.0
-
-02 EXP_DONE: POS0, R2.xyzw
-03 EXP_DONE: PARAM0, R3.xyzw
+02 EXP_DONE: POS0, R3.xyzw
+03 EXP_DONE: PARAM0, R2.xyzw
 END_OF_PROGRAM

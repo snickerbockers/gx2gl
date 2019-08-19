@@ -42,6 +42,8 @@
 struct gx2gl_context {
     struct gx2gl_matrix_context matrixContext;
 
+    float vert_attr_col[4];
+
     unsigned maxVerts;
     float *immedBuf;
     unsigned nVerts;

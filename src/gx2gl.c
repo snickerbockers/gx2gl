@@ -65,7 +65,7 @@
 
 #define MAX_CONTEXTS 4
 
-#define VERT_LEN 4
+#define VERT_LEN 8
 
 #define CMDBUF_POOL_SIZE 4194304
 #define CMDBUF_POOL_ALIGN 64
@@ -395,12 +395,19 @@ gx2glContext gx2glCreateContext(void) {
     }
     WHBGfxInitShaderAttribute(&ctx->shaderGroup, "vert_pos", 0, 0,
                               GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitShaderAttribute(&ctx->shaderGroup, "vert_col", 1, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
     WHBGfxInitFetchShader(&ctx->shaderGroup);
 
     ctx->maxVerts = 1024;
     ctx->immedBuf = MEMAllocFromExpHeapEx(heap_mem2, ctx->maxVerts * sizeof(float) * VERT_LEN, GX2_VERTEX_BUFFER_ALIGNMENT);
 
     /* WHBGfxClearColor(1.0f, 1.0f, 1.0f, 1.0f); */
+
+    ctx->vert_attr_col[0] = 1.0;
+    ctx->vert_attr_col[1] = 1.0;
+    ctx->vert_attr_col[2] = 1.0;
+    ctx->vert_attr_col[3] = 1.0;
 
     ctx->valid = 1;
 
@@ -516,6 +523,7 @@ GLAPI void APIENTRY glEnd(void) {
         GX2SetVertexUniformReg(12, 4, row3i);
 
         GX2SetAttribBuffer(0, VERT_LEN * sizeof(float) * cur_ctx->nVerts, VERT_LEN * sizeof(float), cur_ctx->immedBuf);
+        GX2SetAttribBuffer(1, VERT_LEN * sizeof(float) * cur_ctx->nVerts, VERT_LEN * sizeof(float), cur_ctx->immedBuf + 4);
         GX2DrawEx(gx2glGetGx2PrimitiveMode(cur_ctx->polyMode), cur_ctx->nVerts, 0, 1);
         GX2DrawDone();
     }
@@ -529,7 +537,18 @@ GLAPI void APIENTRY glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
         vout[1] = y;
         vout[2] = z;
         vout[3] = 1.0f;
+        vout[4] = cur_ctx->vert_attr_col[0];
+        vout[5] = cur_ctx->vert_attr_col[1];
+        vout[6] = cur_ctx->vert_attr_col[2];
+        vout[7] = cur_ctx->vert_attr_col[3];
     }
+}
+
+GLAPI void APIENTRY glColor4f(GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
+    cur_ctx->vert_attr_col[0] = r;
+    cur_ctx->vert_attr_col[1] = g;
+    cur_ctx->vert_attr_col[2] = b;
+    cur_ctx->vert_attr_col[3] = a;
 }
 
 GLAPI void APIENTRY glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
