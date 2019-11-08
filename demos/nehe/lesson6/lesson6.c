@@ -12,6 +12,8 @@
 #include <stdio.h>      // Header file for standard file i/o.
 #include <stdlib.h>     // Header file for malloc/free.
 #include <unistd.h>     // needed to sleep.
+#include <stdint.h>
+#include <time.h>
 
 /* ascii code for the escape key */
 #define ESCAPE 27
@@ -23,12 +25,12 @@ int window;
 float xrot, yrot, zrot;
 
 /* storage for one texture  */
-int texture[1];
+GLuint texture[1];
 
 /* Image type - contains height, width, and data */
 struct Image {
-    unsigned long sizeX;
-    unsigned long sizeY;
+    uint32_t sizeX;
+    uint32_t sizeY;
     char *data;
 };
 typedef struct Image Image;
@@ -39,8 +41,8 @@ int ImageLoad(char *filename, Image *image) {
     FILE *file;
     unsigned long size;                 // size of the image in bytes.
     unsigned long i;                    // standard counter.
-    unsigned short int planes;          // number of planes in image (must be 1) 
-    unsigned short int bpp;             // number of bits per pixel (must be 24)
+    uint16_t planes;                    // number of planes in image (must be 1)
+    uint16_t bpp;                       // number of bits per pixel (must be 24)
     char temp;                          // temporary color storage for bgr-rgb conversion.
 
     // make sure the file is there.
@@ -58,14 +60,14 @@ int ImageLoad(char *filename, Image *image) {
 	printf("Error reading width from %s.\n", filename);
 	return 0;
     }
-    printf("Width of %s: %lu\n", filename, image->sizeX);
+    printf("Width of %s: %lu\n", filename, (unsigned long)image->sizeX);
     
     // read the height 
     if ((i = fread(&image->sizeY, 4, 1, file)) != 1) {
 	printf("Error reading height from %s.\n", filename);
 	return 0;
     }
-    printf("Height of %s: %lu\n", filename, image->sizeY);
+    printf("Height of %s: %lu\n", filename, (unsigned long)image->sizeY);
     
     // calculate the size (assuming 24 bits or 3 bytes per pixel).
     size = image->sizeX * image->sizeY * 3;
@@ -76,8 +78,8 @@ int ImageLoad(char *filename, Image *image) {
 	return 0;
     }
     if (planes != 1) {
-	printf("Planes from %s is not 1: %u\n", filename, planes);
-	return 0;
+       printf("Planes from %s is not 1: %u\n", filename, (unsigned)planes);
+       return 0;
     }
 
     // read the bpp
@@ -86,8 +88,8 @@ int ImageLoad(char *filename, Image *image) {
 	return 0;
     }
     if (bpp != 24) {
-	printf("Bpp from %s is not 24: %u\n", filename, bpp);
-	return 0;
+       printf("Bpp from %s is not 24: %u\n", filename, (unsigned)bpp);
+       return 0;
     }
 	
     // seek past the rest of the bitmap header.
@@ -123,12 +125,13 @@ void LoadGLTextures() {
     // allocate space for texture
     image1 = (Image *) malloc(sizeof(Image));
     if (image1 == NULL) {
-	printf("Error allocating space for image");
-	exit(0);
+       printf("Error allocating space for image");
+       return;
     }
 
     if (!ImageLoad("Data/lesson6/NeHe.bmp", image1)) {
-	exit(1);
+       free(image1);
+       return;
     }        
 
     // Create Texture	
@@ -176,6 +179,8 @@ void ReSizeGLScene(int Width, int Height)
     gluPerspective(45.0f,(GLfloat)Width/(GLfloat)Height,0.1f,100.0f);
     glMatrixMode(GL_MODELVIEW);
 }
+
+static clock_t last_frame_ticks;
 
 /* The main drawing function. */
 void DrawGLScene()
@@ -231,9 +236,15 @@ void DrawGLScene()
     
     glEnd();                                    // done with the polygon.
 
-    xrot+=15.0f;		                // X Axis Rotation	
-    yrot+=15.0f;		                // Y Axis Rotation
-    zrot+=15.0f;		                // Z Axis Rotation
+    clock_t ticks = clock();
+
+    double delta = 15.0 * (double)(ticks - last_frame_ticks) / (double)CLOCKS_PER_SEC;
+
+    xrot+=delta; 		                // X Axis Rotation
+    yrot+=delta;		                // Y Axis Rotation
+    zrot+=delta;		                // Z Axis Rotation
+
+    last_frame_ticks = ticks;
 
     // since this is double buffered, swap the buffers to display what just got drawn.
     glutSwapBuffers();
@@ -296,6 +307,8 @@ int main(int argc, char **argv)
     /* Initialize our window. */
     InitGL(640, 480);
   
+    last_frame_ticks = clock();
+
     /* Start Event Processing Engine */  
     glutMainLoop();  
 
