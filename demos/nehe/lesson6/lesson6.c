@@ -13,7 +13,8 @@
 #include <stdlib.h>     // Header file for malloc/free.
 #include <unistd.h>     // needed to sleep.
 #include <stdint.h>
-#include <time.h>
+
+#include <coreinit/time.h>
 
 /* ascii code for the escape key */
 #define ESCAPE 27
@@ -180,7 +181,7 @@ void ReSizeGLScene(int Width, int Height)
     glMatrixMode(GL_MODELVIEW);
 }
 
-static clock_t last_frame_ticks;
+static OSTick last_frame_ticks;
 
 /* The main drawing function. */
 void DrawGLScene()
@@ -236,9 +237,9 @@ void DrawGLScene()
     
     glEnd();                                    // done with the polygon.
 
-    clock_t ticks = clock();
+    clock_t ticks = OSGetTick();
 
-    double delta = 15.0 * (double)(ticks - last_frame_ticks) / (double)CLOCKS_PER_SEC;
+    double delta = (15.0 / 1000.0) * OSTicksToMilliseconds(ticks - last_frame_ticks);
 
     xrot+=delta; 		                // X Axis Rotation
     yrot+=delta;		                // Y Axis Rotation
@@ -307,7 +308,7 @@ int main(int argc, char **argv)
     /* Initialize our window. */
     InitGL(640, 480);
   
-    last_frame_ticks = clock();
+    last_frame_ticks = OSGetTick();
 
     /* Start Event Processing Engine */  
     glutMainLoop();  
