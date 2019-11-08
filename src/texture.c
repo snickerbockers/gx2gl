@@ -32,47 +32,13 @@
  *
  ******************************************************************************/
 
-#include <string.h>
-
 #include <GL/gl.h>
-#include <GL/gx2gl.h>
+#include <GL/gx2gl_ext.h>
 
-#define GX2GL_PROC(procName) { #procName, procName }
+GLAPI void APIENTRY glBindTexture (GLenum target, GLuint texture) {
+    // TODO: this
+}
 
-static struct gx2glProcTableEntry {
-    char const *name;
-    void *proc;
-} const gx2glProcTable[] = {
-    GX2GL_PROC(glShadeModel),
-    GX2GL_PROC(glViewport),
-    GX2GL_PROC(glClear),
-    GX2GL_PROC(glBegin),
-    GX2GL_PROC(glEnd),
-    GX2GL_PROC(glVertex3f),
-    GX2GL_PROC(glMatrixMode),
-    GX2GL_PROC(glTranslatef),
-    GX2GL_PROC(glLoadIdentity),
-    GX2GL_PROC(glEnable),
-    GX2GL_PROC(glClearDepth),
-    GX2GL_PROC(glClearColor),
-    GX2GL_PROC(glHint),
-    GX2GL_PROC(glDepthFunc),
-    GX2GL_PROC(glMatrixMode),
-    GX2GL_PROC(glLoadIdentity),
-    GX2GL_PROC(glBindTexture),
-    GX2GL_PROC(glTexParameteri),
-
-    { NULL, NULL }
-};
-
-void *gx2glGetProcAddress(char const *procName) {
-    struct gx2glProcTableEntry const *cursor = gx2glProcTable;
-    while (cursor->name) {
-        if (strcmp(procName, cursor->name) == 0)
-            return cursor->proc;
-        cursor++;
-    }
-
-    // procedure not found
-    return NULL;
+GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param ) {
+    // TODO: this
 }

@@ -97,6 +97,8 @@ GLAPI void APIENTRY glVertex3f(GLfloat x, GLfloat y, GLfloat z);
 // functions with double-precision parameters (we just convert them to single)
 GLAPI void APIENTRY glClearDepth(double depth);
 
+GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param );
+
 #ifdef __cplusplus
 }
 #endif

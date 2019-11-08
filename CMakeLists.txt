@@ -6,4 +6,5 @@ include("${DEVKITPRO}/wut/share/wut.cmake" REQUIRED)
 
 add_subdirectory(src)
 add_subdirectory(demos/nehe/lesson2)
+add_subdirectory(demos/nehe/lesson6)
 add_subdirectory(demos/two_screens)
