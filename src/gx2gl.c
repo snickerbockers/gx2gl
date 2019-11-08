@@ -36,6 +36,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
+
 #include <gx2/draw.h>
 #include <gx2r/draw.h>
 #include <gx2r/buffer.h>
@@ -567,6 +569,37 @@ GLAPI void APIENTRY glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
 }
 
 GLAPI void APIENTRY glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
+
+    /*
+     * the below is based on wikipedia's explanation at:
+     * https://en.wikipedia.org/wiki/Rotation_matrix#Conversion_from_and_to_axis%E2%80%93angle
+     */
+
+    GLfloat c = cos(angle * M_PI / 180.0);
+    GLfloat s = sin(angle * M_PI / 180.0);
+    GLfloat mat[16];
+
+    mat[0] = c + x * x * (1.0f - c);
+    mat[1] = y * x * (1 - c) + z * s;
+    mat[2] = z * x * (1 - c) - y * s;
+    mat[3] = 0.0f;
+
+    mat[4] = x * y * (1 - c) - z * s;
+    mat[5] = c + y * y * (1 - c);
+    mat[6] = z * y * (1 - c) + x * s;
+    mat[7] = 0.0f;
+
+    mat[8] = x * z * (1 - c) + y * s;
+    mat[9] = y * z * (1 - c) - x * s;
+    mat[10] = c + z * z * (1 - c);
+    mat[11] = 0.0f;
+
+    mat[12] = 0.0f;
+    mat[13] = 0.0f;
+    mat[14] = 0.0f;
+    mat[15] = 1.0f;
+
+    glMultMatrixf(mat);
 }
 
 GLAPI void APIENTRY glClearDepth(double depth) {
