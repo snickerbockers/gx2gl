@@ -93,6 +93,7 @@ typedef double GLdouble;
 GLAPI void APIENTRY glBegin(GLenum mode);
 GLAPI void APIENTRY glEnd(void);
 GLAPI void APIENTRY glVertex3f(GLfloat x, GLfloat y, GLfloat z);
+GLAPI void APIENTRY glTexCoord2f(GLfloat s, GLfloat t);
 
 // functions with double-precision parameters (we just convert them to single)
 GLAPI void APIENTRY glClearDepth(double depth);

@@ -7,14 +7,14 @@ add_executable(lesson06 lesson6.c)
 wut_enable_stdcpp(lesson06)
 
 target_link_libraries(lesson06
-   m
    whb
    gfd
    gx2
    proc_ui
    nsysnet
    sysapp
-   gx2gl)
+   gx2gl
+   m)
 
 target_include_directories(lesson06 PRIVATE "${WUT_ROOT}/include" "${CMAKE_SOURCE_DIR}/include")
 

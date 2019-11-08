@@ -77,6 +77,9 @@ void glutInit(int *argcp, char **argv) {
 void glutInitDisplayMode(unsigned mode) {
 }
 
+void glutInitWindowPosition(int x, int y) {
+}
+
 int glutCreateWindow(char const *title) {
     return 0; // TODO
 }

@@ -32,6 +32,8 @@
  *
  ******************************************************************************/
 
+#include <string.h>
+
 #include <GL/gl.h>
 #include <GL/gx2gl_ext.h>
 
@@ -41,4 +43,15 @@ GLAPI void APIENTRY glBindTexture (GLenum target, GLuint texture) {
 
 GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param ) {
     // TODO: this
+}
+
+GLAPI void APIENTRY glTexImage2D (GLenum target, GLint level, GLint internalformat,
+                                  GLsizei width, GLsizei height, GLint border,
+                                  GLenum format, GLenum type, const GLvoid *pixels) {
+    // TODO: this
+}
+
+GLAPI void APIENTRY glGenTextures (GLsizei n, GLuint *textures) {
+    // TODO: this
+    memset(textures, 0, n * sizeof(GLuint));
 }

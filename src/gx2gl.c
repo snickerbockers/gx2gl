@@ -551,6 +551,11 @@ GLAPI void APIENTRY glColor4f(GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
     cur_ctx->vert_attr_col[3] = a;
 }
 
+GLAPI void APIENTRY glTexCoord2f(GLfloat s, GLfloat t) {
+    cur_ctx->vert_attr_tex_coord[0] = s;
+    cur_ctx->vert_attr_tex_coord[1] = t;
+}
+
 GLAPI void APIENTRY glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
     GLfloat mat[16] = {
         1.0f, 0.0f, 0.0f, 0.0f,
@@ -559,6 +564,9 @@ GLAPI void APIENTRY glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
         x, y, z, 1.0f
     };
     glMultMatrixf(mat);
+}
+
+GLAPI void APIENTRY glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 }
 
 GLAPI void APIENTRY glClearDepth(double depth) {

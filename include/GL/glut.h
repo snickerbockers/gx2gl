@@ -9,6 +9,7 @@ extern "C" {
 #endif
 
 void glutInitWindowSize(int width, int height);
+void glutInitWindowPosition(int x, int y);
 void glutInit(int *argcp, char **argv);
 void glutInitDisplayMode(unsigned mode);
 int glutCreateWindow(char const *title);
