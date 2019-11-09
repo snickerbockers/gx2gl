@@ -510,7 +510,7 @@ GLAPI void APIENTRY glEnd(void) {
         float row0[4] = { mvp[0], mvp[4], mvp[8], mvp[12] };
         float row1[4] = { mvp[1], mvp[5], mvp[9], mvp[13] };
         float row2[4] = { mvp[2], mvp[6], mvp[10], mvp[14] };
-        float row3[4] = { mvp[4], mvp[7], mvp[11], mvp[15] };
+        float row3[4] = { mvp[3], mvp[7], mvp[11], mvp[15] };
         uint32_t row0i[4], row1i[4], row2i[4], row3i[4];
         memcpy(row0i, row0, sizeof(row0i));
         memcpy(row1i, row1, sizeof(row1i));
