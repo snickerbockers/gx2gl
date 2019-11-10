@@ -32,32 +32,15 @@
  *
  ******************************************************************************/
 
-#ifndef GX2GL_CONTEXT_H_
-#define GX2GL_CONTEXT_H_
+#ifndef GX2GL_TEXTURE_H_
+#define GX2GL_TEXTURE_H_
 
-#include <whb/gfx.h>
+#include <stdbool.h>
 
-#include "matrix.h"
-#include "texture.h"
-
-struct gx2gl_context {
-    struct gx2gl_matrix_context matrixContext;
-
-    float vert_attr_col[4];
-    float vert_attr_tex_coord[2];
-
-    unsigned maxVerts;
-    float *immedBuf;
-    unsigned nVerts;
-    GLenum polyMode;
-    GLboolean immedMode;
-    WHBGfxShaderGroup shaderGroup;
-    int valid;
-    GLenum error;
-
-    struct texture textures[GX2GL_MAX_TEXTURES];
+struct texture {
+    bool in_use;
 };
 
-extern struct gx2gl_context *cur_ctx;
+#define GX2GL_MAX_TEXTURES 128
 
 #endif

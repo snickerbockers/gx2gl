@@ -411,6 +411,8 @@ gx2glContext gx2glCreateContext(void) {
     ctx->vert_attr_col[2] = 1.0;
     ctx->vert_attr_col[3] = 1.0;
 
+    memset(ctx->textures, 0, sizeof(ctx->textures));
+
     ctx->valid = 1;
 
     return handle;

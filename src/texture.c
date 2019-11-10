@@ -37,6 +37,9 @@
 #include <GL/gl.h>
 #include <GL/gx2gl_ext.h>
 
+#include "texture.h"
+#include "context.h"
+
 GLAPI void APIENTRY glBindTexture (GLenum target, GLuint texture) {
     // TODO: this
 }
@@ -51,7 +54,24 @@ GLAPI void APIENTRY glTexImage2D (GLenum target, GLint level, GLint internalform
     // TODO: this
 }
 
+static unsigned gx2glAllocTexture(void) {
+    unsigned idx;
+    for (idx = 1; idx < GX2GL_MAX_TEXTURES; idx++)
+        if (!cur_ctx->textures[idx].in_use) {
+            cur_ctx->textures[idx].in_use = true;
+            return idx;
+        }
+
+    return 0; // TODO: signal error
+}
+
+__attribute__((unused))
+static void gx2glFreeTexture(unsigned idx) {
+    cur_ctx->textures[idx].in_use = false;
+}
+
 GLAPI void APIENTRY glGenTextures (GLsizei n, GLuint *textures) {
-    // TODO: this
-    memset(textures, 0, n * sizeof(GLuint));
+    GLsizei n_processed;
+    for (n_processed = 0; n_processed < n; n_processed++)
+        textures[n_processed] = gx2glAllocTexture();
 }
