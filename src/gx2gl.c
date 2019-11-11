@@ -399,6 +399,8 @@ gx2glContext gx2glCreateContext(void) {
                               GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
     WHBGfxInitShaderAttribute(&ctx->shaderGroup, "vert_col", 1, 0,
                               GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
+    WHBGfxInitShaderAttribute(&ctx->shaderGroup, "vert_texcoord", 2, 0,
+                              GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32);
     WHBGfxInitFetchShader(&ctx->shaderGroup);
 
     ctx->maxVerts = 1024;
@@ -548,6 +550,8 @@ GLAPI void APIENTRY glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
         vout[7] = cur_ctx->vert_attr_col[3];
         vout[8] = cur_ctx->vert_attr_tex_coord[0];
         vout[9] = cur_ctx->vert_attr_tex_coord[1];
+        vout[10] = 1.0f;
+        vout[11] = 1.0f;
     }
 }
 
