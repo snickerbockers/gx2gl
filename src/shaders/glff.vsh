@@ -36,9 +36,9 @@
 ; $ATTRIB_VARS[1].name = "vert_col"
 ; $ATTRIB_VARS[1].type = "Float4"
 ; $ATTRIB_VARS[1].location = 1
-; $ATTRIB_VARS[1].name = "vert_texcoord"
-; $ATTRIB_VARS[1].type = "Float4"
-; $ATTRIB_VARS[1].location = 2
+; $ATTRIB_VARS[2].name = "vert_texcoord"
+; $ATTRIB_VARS[2].type = "Float4"
+; $ATTRIB_VARS[2].location = 2
 
 ; $NUM_SPI_VS_OUT_ID = 2
 ; $SPI_VS_OUT_ID[0].SEMANTIC_0 = 0
