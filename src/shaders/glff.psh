@@ -1,9 +1,10 @@
 ; $MODE = "UniformRegister"
-; $NUM_SPI_PS_INPUT_CNTL = 1
+; $NUM_SPI_PS_INPUT_CNTL = 2
 ; $SPI_PS_INPUT_CNTL[0].SEMANTIC = 0
+; $SPI_PS_INPUT_CNTL[1].SEMANTIC = 1
 ; $SAMPLER_VARS[0].name = "tex"
 ; $SAMPLER_VARS[0].type = "SAMPLER2D"
-; $SAMPLER_VARS[0].location = 0
+; $SAMPLER_VARS[0].location = 2
 
 00 TEX: ADDR(32) CNT(1) VALID_PIX
   0      SAMPLE          R1.xyzw, R0.xy0x, t0, s0

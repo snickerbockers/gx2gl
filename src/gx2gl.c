@@ -67,7 +67,7 @@
 
 #define MAX_CONTEXTS 4
 
-#define VERT_LEN 8
+#define VERT_LEN 12
 
 #define CMDBUF_POOL_SIZE 4194304
 #define CMDBUF_POOL_ALIGN 64
@@ -528,6 +528,7 @@ GLAPI void APIENTRY glEnd(void) {
 
         GX2SetAttribBuffer(0, VERT_LEN * sizeof(float) * cur_ctx->nVerts, VERT_LEN * sizeof(float), cur_ctx->immedBuf);
         GX2SetAttribBuffer(1, VERT_LEN * sizeof(float) * cur_ctx->nVerts, VERT_LEN * sizeof(float), cur_ctx->immedBuf + 4);
+        GX2SetAttribBuffer(2, VERT_LEN * sizeof(float) * cur_ctx->nVerts, VERT_LEN * sizeof(float), cur_ctx->immedBuf + 8);
         GX2DrawEx(gx2glGetGx2PrimitiveMode(cur_ctx->polyMode), cur_ctx->nVerts, 0, 1);
         GX2DrawDone();
     }
@@ -545,6 +546,8 @@ GLAPI void APIENTRY glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
         vout[5] = cur_ctx->vert_attr_col[1];
         vout[6] = cur_ctx->vert_attr_col[2];
         vout[7] = cur_ctx->vert_attr_col[3];
+        vout[8] = cur_ctx->vert_attr_tex_coord[0];
+        vout[9] = cur_ctx->vert_attr_tex_coord[1];
     }
 }
 
