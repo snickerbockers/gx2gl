@@ -561,6 +561,31 @@ GLAPI void APIENTRY glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
     glMultMatrixf(mat);
 }
 
+GLAPI void APIENTRY glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
+{
+    GLfloat normX, normY, normZ;
+    GLfloat currNorm = sqrtf((x * x) + (y * y) + (z * z));
+    normX = x / currNorm;
+    normY = y / currNorm;
+    normZ = z / currNorm;
+
+    GLfloat c = cosf(angle);
+    GLfloat s = sinf(angle);
+
+    GLfloat x2 = normX * normX;
+    GLfloat y2 = normY * normY;
+    GLfloat z2 = normZ * normZ;
+
+    GLfloat rotMat[16] = {
+        (x2 * (1.0f - c)) + c, (normX * normY * (1.0f - c)) - (normZ * s), (normX * normZ * (1.0f - c)) + (normY * s), 0.0f,
+        (normY * normX * (1.0f - c)) + (normZ * s), (y2 * (1.0f - c)) + c, (normY * normZ * (1.0f - c)) - (normX * s), 0.0f,
+        (normX * normZ * (1.0f - c)) - (normY * s), (normY * normZ * (1.0f - c)) + (normX * s), (z2 * (1.0f - c)) + c, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    glMultMatrixf(rotMat);
+}
+
 GLAPI void APIENTRY glClearDepth(double depth) {
 }
 
